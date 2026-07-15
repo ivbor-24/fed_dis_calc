@@ -235,14 +235,30 @@ let currentSections = CIVIL_SEC;
 let currentSectionNames = CIVIL_NAMES;
 let lastMarketPrice = 0;
 let lastArea = 0;
+let savedCatIdx = null;
+let savedObjIdx = null;
 
 function switchGroup(group) {
+  // Save state before switching away
+  if (currentGroup !== 'cost' && group === 'cost') {
+    const c = document.getElementById('category'); if (c) savedCatIdx = c.value;
+    const o = document.getElementById('object'); if (o) savedObjIdx = o.value;
+  }
   currentGroup = group;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`[data-group="${group}"]`).classList.add('active');
   document.getElementById('calcSection').style.display = (group === 'cost') ? 'none' : '';
   document.getElementById('costSection').style.display = (group === 'cost') ? '' : 'none';
-  if (group !== 'cost') populateCategories();
+  if (group !== 'cost') {
+    populateCategories();
+    // Restore previous selection
+    if (savedCatIdx !== null) {
+      document.getElementById('category').value = savedCatIdx;
+      populateObjects();
+      document.getElementById('object').value = savedObjIdx;
+      onObjChange();
+    }
+  }
   if (group === 'cost') updateCostTab();
 }
 
