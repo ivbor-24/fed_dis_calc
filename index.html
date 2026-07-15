@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Федеральный калькулятор стоимости проектных работ</title>
+<style>
+:root{--red:#B30000;--green:#2e7d32;--dark:#1a1a1a;--gray:#666;--light:#f5f5f5;--border:#ddd;--r:6px;--g:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f0f0;color:var(--dark);line-height:1.5}
+.container{max-width:960px;margin:0 auto;padding:20px}
+h1{font-size:22px;margin-bottom:2px}
+.subtitle{font-size:10px;color:var(--gray);margin-bottom:14px}
+.tab-row{display:flex;gap:0;margin-bottom:14px}
+.tab{padding:9px 16px;cursor:pointer;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;transition:.2s;white-space:nowrap}
+.tab:first-child{border-radius:var(--r) 0 0 var(--r)}
+.tab:last-child{border-radius:0 var(--r) var(--r) 0}
+.tab.active{background:var(--red);color:#fff;border-color:var(--red)}
+.tab-cost.active{background:var(--green);border-color:var(--green)}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:8px}
+label{font-size:11px;color:var(--gray);display:block;margin-bottom:2px;font-weight:500}
+select,input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;background:#fff}
+input[type=number]{font-family:monospace}
+select:focus,input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(179,0,0,.1)}
+.form-row{margin-bottom:var(--g)}
+.form-inline{display:flex;gap:var(--g);align-items:end}
+.form-inline>div{flex:1}
+.check-item{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11px}
+.check-item input{width:auto}
+.coeff-group{border:1px solid var(--border);border-radius:var(--r);margin-bottom:4px;overflow:hidden}
+.coeff-header{display:flex;align-items:center;gap:6px;padding:7px 9px;cursor:pointer;background:var(--light);font-weight:600;font-size:10px;user-select:none}
+.coeff-header:hover{background:#eee}
+.coeff-body{padding:6px 9px;display:none}
+.coeff-group.open .coeff-body{display:block}
+.sx-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;font-size:10px}
+.sx-item{display:flex;align-items:center;gap:2px;padding:2px 4px;border:1px solid var(--border);border-radius:3px}
+.sx-item input{width:auto}
+.result-card{background:var(--dark);color:#fff;padding:16px;border-radius:10px;margin-bottom:10px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.result-label{font-size:10px;opacity:.6;margin-bottom:1px}
+.result-value{font-size:24px;font-weight:700}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.detail-item{display:flex;justify-content:space-between;align-items:center;padding:3px 6px;background:var(--light);border-radius:3px;font-size:10px}
+.detail-item-name{font-weight:500}
+.detail-item-right{display:flex;gap:6px;align-items:center}
+.detail-item-pct{color:var(--gray)}
+.detail-item-cost{font-weight:600;font-family:monospace}
+.formula-box{background:#fff3cd;padding:8px 10px;border-radius:5px;font-family:monospace;font-size:11px;text-align:center;margin-bottom:8px;border:1px solid #ffc107}
+.stage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px}
+.stage-box{text-align:center;padding:7px;background:var(--light);border-radius:4px}
+.stage-box-label{font-size:9px;color:var(--gray)}
+.stage-box-value{font-size:13px;font-weight:700;font-family:monospace}
+.info{font-size:10px;color:var(--gray);margin-top:3px}
+.warn{font-size:10px;color:#856404;margin-top:4px;padding:5px 8px;background:#fff3cd;border-radius:4px}
+
+/* Cost price tab */
+.cost-section{margin-top:12px}
+.cost-card{background:#fff;border-radius:10px;padding:16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid var(--green)}
+.cost-card-title{font-size:14px;font-weight:700;margin-bottom:8px;color:var(--green)}
+.cost-mode-row{display:flex;gap:8px;margin-bottom:10px}
+.cost-mode-btn{padding:7px 14px;cursor:pointer;border:1px solid var(--border);border-radius:var(--r);font-size:11px;background:#fff;font-weight:500}
+.cost-mode-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.cost-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+.cost-table th{text-align:left;padding:5px 8px;background:var(--light);font-weight:600;border-bottom:2px solid var(--border)}
+.cost-table td{padding:5px 8px;border-bottom:1px solid var(--border)}
+.cost-table .total-row{font-weight:700;border-top:2px solid var(--dark)}
+.cost-table .highlight{background:#e8f5e9}
+.cost-table .right{text-align:right;font-family:monospace}
+
+.team-table{width:100%;border-collapse:collapse;font-size:10px;margin:8px 0}
+.team-table th{text-align:left;padding:4px 6px;background:var(--light);font-weight:600;border-bottom:1px solid var(--border)}
+.team-table td{padding:3px 6px;border-bottom:1px solid var(--border)}
+.team-table select,.team-table input{width:auto;min-width:40px;font-size:10px;padding:3px 4px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Калькулятор стоимости проектных работ</h1>
+<div class="subtitle">848/пр + 847/пр + 707/пр. Уровень цен: 01.01.2021, тыс. руб. без НДС</div>
+
+<div class="tab-row">
+  <div class="tab active" data-group="civil" onclick="switchGroup('civil')">🏠 Жилищно-гражданские</div>
+  <div class="tab" data-group="engineering" onclick="switchGroup('engineering')">⚡ Инженерные сети</div>
+  <div class="tab tab-cost" data-group="cost" onclick="switchGroup('cost')" style="margin-left:auto">💰 Себестоимость</div>
+</div>
+
+<div id="calcSection">
+<div class="card">
+  <div class="card-title">1. Категория и тип объекта</div>
+  <div class="form-row"><select id="category"></select></div>
+  <div class="form-row"><select id="object"></select></div>
+</div>
+
+<div class="card">
+  <div class="card-title">2. Величина натурального показателя</div>
+  <div class="form-inline">
+    <div><input type="number" id="Xvalue" value="1000" min="0" step="any" style="font-size:14px;font-weight:600"></div>
+    <div style="max-width:160px"><span id="unitLabel" style="font-size:12px;font-weight:600;padding:8px 0;display:block">—</span></div>
+  </div>
+  <div class="info" id="intervalInfo"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">3. Стадия и коэффициенты</div>
+  <div class="stage-grid">
+    <div class="stage-box"><div class="stage-box-label">Проектная (П)</div><div class="stage-box-value">40%</div></div>
+    <div class="stage-box"><div class="stage-box-label">Рабочая (Р)</div><div class="stage-box-value">60%</div></div>
+    <div class="stage-box"><div class="stage-box-label">П + Р</div><div class="stage-box-value">100%</div></div>
+  </div>
+  <div class="form-inline" style="margin-bottom:8px">
+    <div><label>Стадия:</label><select id="stage"><option value="П+Р" selected>П+Р — 100%</option><option value="П">П — 40%</option><option value="Р">Р — 60%</option></select></div>
+    <div><label>Ипр:</label><input type="number" id="Ipr" value="1.0" step="0.01" style="width:100px"></div>
+  </div>
+  <label style="margin-bottom:4px">Коэффициенты (707/пр):</label>
+  <div class="coeff-group"><div class="coeff-header" onclick="this.parentElement.classList.toggle('open')">▶ Сроки (п.169): ×1.1 / ×1.2 / ×1.4</div>
+    <div class="coeff-body"><div class="check-item"><input type="checkbox" id="c_d1"><label>×1.1 — в 1.2 раза</label></div><div class="check-item"><input type="checkbox" id="c_d2"><label>×1.2 — в 1.4 раза</label></div><div class="check-item"><input type="checkbox" id="c_d3"><label>×1.4 — в 2 раза</label></div></div></div>
+  <div class="coeff-group"><div class="coeff-header" onclick="this.parentElement.classList.toggle('open')">▶ Сейсмика (табл.5.1)</div>
+    <div class="coeff-body"><div class="check-item"><input type="checkbox" id="c_s1"><label>×1.15 — 7 баллов</label></div><div class="check-item"><input type="checkbox" id="c_s2"><label>×1.20 — 8 баллов</label></div><div class="check-item"><input type="checkbox" id="c_s3"><label>×1.30 — 9 баллов</label></div></div></div>
+  <div class="coeff-group"><div class="coeff-header" onclick="this.parentElement.classList.toggle('open')">▶ Грунты (табл.5.1)</div>
+    <div class="coeff-body"><div class="check-item"><input type="checkbox" id="c_soil"><label>×1.15 — карст, оползни, просадка</label></div><div class="check-item"><input type="checkbox" id="c_frost"><label>×1.15 — вечная мерзлота</label></div><div class="check-item"><input type="checkbox" id="c_flood"><label>×1.15 — подтопление</label></div></div></div>
+  <div class="coeff-group"><div class="coeff-header" onclick="this.parentElement.classList.toggle('open')">▶ Особые</div>
+    <div class="coeff-body"><div class="check-item"><input type="checkbox" id="c_uniq"><label>×1.5 — уникальный (п.154)</label></div><div class="check-item"><input type="checkbox" id="c_recon"><label>×1.5 — реконструкция (п.156)</label></div><div class="check-item"><input type="checkbox" id="c_overh"><label>×0.5 — капремонт (п.159)</label></div><div class="check-item"><input type="checkbox" id="c_import"><label>×1.3 — импорт впервые</label></div><div class="check-item"><input type="checkbox" id="c_cramp"><label>×1.1 — стеснённость</label></div><div class="check-item"><input type="checkbox" id="c_parallel"><label>×1.3 — параллельное П+С</label></div></div></div>
+</div>
+
+<div class="result-card">
+  <div class="result-grid">
+    <div><div class="result-label">Базовая цена Ц(б), тыс. руб.</div><div class="result-value" id="bp">—</div></div>
+    <div><div class="result-label">Итого, тыс. руб.</div><div class="result-value" id="tp">—</div>
+      <div class="check-item" style="margin-top:4px;font-size:11px"><input type="checkbox" id="c_nds"><span>+ НДС 20%</span></div></div>
+  </div>
+  <div class="formula-box" style="margin-top:8px;background:rgba(255,255,255,.1);border:none;color:#fff" id="fd">C = (a + b × X) × Кп × Ипр</div>
+</div>
+
+<div class="card">
+  <div class="card-title" id="sectionTitle">4. Разделы проектной документации</div>
+  <div class="check-item" style="margin-bottom:5px"><input type="checkbox" id="checkAll" checked onchange="document.querySelectorAll('.sx').forEach(c=>c.checked=this.checked);calc()"><label><b>Все</b></label></div>
+  <div class="sx-grid" id="sectionList"></div>
+</div>
+<div class="card" id="detailCard" style="display:none"><div class="card-title">Детализация</div><div class="detail-grid" id="detailValues"></div></div>
+</div>
+
+<!-- COST PRICE SECTION -->
+<div id="costSection" style="display:none">
+  <div class="cost-card">
+    <div class="cost-card-title">Себестоимость проектирования</div>
+    <div class="info">Источник: Приложение 2 к 707/пр (табл. 1.1, 1.2, 1.3) + Приказ 264/пр</div>
+
+    <div class="cost-mode-row" style="margin-top:10px">
+      <div class="cost-mode-btn active" onclick="setCostMode('market')">От рыночной цены</div>
+      <div class="cost-mode-btn" onclick="setCostMode('calc')">Калькуляция затрат (п.145)</div>
+    </div>
+
+    <!-- Mode: From market price -->
+    <div id="costMarket">
+      <div class="form-inline" style="margin-bottom:8px">
+        <div><label>Рыночная цена (из расчёта), тыс. руб.:</label><input type="number" id="cost_market_price" readonly style="background:var(--light)"></div>
+        <div><label>Рентабельность, %:</label><input type="number" id="cost_rentability" value="10" step="1" style="width:90px" oninput="calcCostMarket()"></div>
+      </div>
+      <table class="cost-table" id="costMarketTable"></table>
+    </div>
+
+    <!-- Mode: Калькуляция затрат -->
+    <div id="costCalc" style="display:none">
+      <div class="form-inline" style="margin-bottom:8px">
+        <div><label>ЗПср, руб/мес (ОКВЭД 71.11):</label><input type="number" id="cost_zp" value="120000" step="1000" oninput="calcCostCalc()"></div>
+        <div><label>Раб. дней/мес:</label><input type="number" id="cost_days_month" value="21" style="width:80px" oninput="calcCostCalc()"></div>
+        <div><label>Рентабельность, %:</label><input type="number" id="cost_rent2" value="10" step="1" style="width:80px" oninput="calcCostCalc()"></div>
+      </div>
+      <div class="form-inline" style="margin-bottom:8px">
+        <div><label>Продолж. проектирования Тп, дней:</label><input type="number" id="cost_tp" value="231" oninput="calcCostCalc()"></div>
+        <div><label>Общая численность Чобщ, чел:</label><input type="number" id="cost_ch" value="5" oninput="calcCostCalc()"></div>
+      </div>
+      <div class="info" id="cost_tp_auto"></div>
+
+      <div class="card-title" style="margin-top:10px">Состав команды</div>
+      <table class="team-table" id="teamTable"></table>
+      <div class="info" id="cost_kcv_info"></div>
+
+      <table class="cost-table" id="costCalcTable" style="margin-top:8px"></table>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ===== DATA =====
+const UNIFIED = {"_meta": {"source": "848/пр + 847/пр", "price_level": "01.01.2021", "currency": "тыс. руб. без НДС"}, "groups": [{"id": "civil", "name": "ЖИЛИЩНО-ГРАЖДАНСКИЕ ОБЪЕКТЫ (848/пр)", "type": "civil", "categories": [{"name": "3.1 — Жилые объекты для постоянного проживания", "objects": [{"name": "Индивидуальный жилой дом", "unit": "кв. м.", "intervals": [{"min": 100, "max": 150, "a": 51.2, "b": 3.069}], "section_table": "civil_1"}, {"name": "Малоэтажный многоквартирный дом", "unit": "кв. м.", "intervals": [{"min": 500, "max": 1000, "a": 23.5, "b": 1.648}, {"min": 1000, "max": 2000, "a": 815.6, "b": 0.926}, {"min": 2000, "max": 3000, "a": 1365.6, "b": 0.616}, {"min": 3000, "max": 6000, "a": 1387.5, "b": 0.609}], "section_table": "civil_1"}, {"name": "Крупнопанельный многоквартирный дом (многоэтажный, среднеэтажный)", "unit": "кв. м.", "intervals": [{"min": 2500, "max": 5000, "a": 1101.6, "b": 1.069}, {"min": 5000, "max": 10000, "a": 2898.1, "b": 0.71}, {"min": 10000, "max": 15000, "a": 4024.7, "b": 0.597}, {"min": 15000, "max": 20000, "a": 6700.7, "b": 0.419}], "section_table": "civil_1"}, {"name": "Монолитный многоквартирный дом (многоэтажный, среднеэтажный)", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 3171.7, "b": 0.732}, {"min": 10000, "max": 15000, "a": 3800.2, "b": 0.669}, {"min": 15000, "max": 20000, "a": 4820.1, "b": 0.601}], "section_table": "civil_1"}, {"name": "Сборно-монолитный многоквартирный дом (многоэтажный, среднеэтажный)", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 1833.3, "b": 0.854}, {"min": 10000, "max": 15000, "a": 4169.7, "b": 0.62}, {"min": 15000, "max": 20000, "a": 6283.8, "b": 0.479}], "section_table": "civil_1"}, {"name": "Кирпичный многоквартирный дом (многоэтажный, среднеэтажный)", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 2938.9, "b": 0.847}, {"min": 10000, "max": 15000, "a": 4588.4, "b": 0.682}, {"min": 15000, "max": 20000, "a": 6843.4, "b": 0.531}], "section_table": "civil_1"}], "coeffs": []}, {"name": "3.2 — Жилые объекты специализированного назначения", "objects": [{"name": "Здание общежития", "unit": "кв. м.", "intervals": [{"min": 7000, "max": 15000, "a": 1100.0, "b": 0.943}, {"min": 15000, "max": 25000, "a": 6851.0, "b": 0.56}], "section_table": "civil_2"}, {"name": "Здание дома фонда социального обслуживания престарелых, здание дома фонда социального обслуживания инвалидов", "unit": "кв. м.", "intervals": [{"min": 500, "max": 2500, "a": 190.0, "b": 1.856}, {"min": 2500, "max": 5000, "a": 520.4, "b": 1.724}, {"min": 5000, "max": 8000, "a": 5563.5, "b": 0.715}], "section_table": "civil_2"}, {"name": "Здание фонда временного поселения вынужденных переселенцев и лиц, признанных беженцами", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 2500, "a": 740.2, "b": 2.067}], "section_table": "civil_2"}, {"name": "Здание детского дома (дома для детей-сирот и детей, оставшихся без попечения родителей), здание социального приюта для детей и подростков", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 5000, "a": 1117.1, "b": 0.993}], "section_table": "civil_2"}, {"name": "Здание психоневрологического интерната", "unit": "кв. м.", "intervals": [{"min": 900, "max": 5000, "a": 1548.5, "b": 0.66}, {"min": 5000, "max": 10000, "a": 2472.2, "b": 0.475}, {"min": 10000, "max": 15000, "a": 4341.0, "b": 0.288}], "section_table": "civil_2"}], "coeffs": []}, {"name": "3.3 — Гостиницы и иные объекты для временного проживания", "objects": [{"name": "Здание гостиницы", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 4000, "a": 1229.8, "b": 1.422}, {"min": 4000, "max": 8000, "a": 1892.8, "b": 1.256}], "section_table": "civil_3"}], "coeffs": [{"name": "Проектирование 4-звездочных гостиниц", "value": 1.2}, {"name": "Проектирование 5-звездочных гостиниц", "value": 1.3}]}, {"name": "3.4 — Объекты лечебного обеспечения", "objects": [{"name": "Здание клинической больницы, здание офтальмологической больницы", "unit": "кв. м.", "intervals": [{"min": 15000, "max": 75000, "a": 11207.3, "b": 1.292}], "section_table": "civil_4"}, {"name": "Здание детской клинической больницы", "unit": "кв. м.", "intervals": [{"min": 15000, "max": 30000, "a": 4882.8, "b": 1.006}, {"min": 30000, "max": 60000, "a": 7080.4, "b": 0.933}], "section_table": "civil_4"}, {"name": "Здание инфекционной больницы", "unit": "кв. м.", "intervals": [{"min": 15000, "max": 35000, "a": 21218.3, "b": 1.119}], "section_table": "civil_4"}, {"name": "Здание больницы скорой помощи", "unit": "кв. м.", "intervals": [{"min": 20000, "max": 65000, "a": 29079.6, "b": 1.223}], "section_table": "civil_4"}, {"name": "Здание психоневрологической больницы, здание психиатрической больницы", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 10000, "a": 1904.3, "b": 1.314}], "section_table": "civil_4"}, {"name": "Здание онкологической больницы", "unit": "кв. м.", "intervals": [{"min": 30000, "max": 40000, "a": 547.1, "b": 1.525}, {"min": 40000, "max": 55000, "a": 6638.8, "b": 1.373}], "section_table": "civil_4"}, {"name": "Здание противотуберкулезной больницы, здание кожно-венерологической больницы, здание наркологической больницы, здание центра медико-социальной реабилитации больных наркоманией, здание гериатрической больницы", "unit": "кв. м.", "intervals": [{"min": 7000, "max": 15000, "a": 3258.3, "b": 1.752}], "section_table": "civil_4"}, {"name": "Здание лечебного корпуса", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 5000, "a": 1168.9, "b": 1.948}, {"min": 5000, "max": 10000, "a": 5179.3, "b": 1.146}], "section_table": "civil_4"}, {"name": "Здание хирургического корпуса", "unit": "кв. м.", "intervals": [{"min": 15000, "max": 25000, "a": 10146.6, "b": 1.648}, {"min": 25000, "max": 35000, "a": 39218.9, "b": 0.485}], "section_table": "civil_4"}, {"name": "Здание гинекологической больницы", "unit": "кв. м.", "intervals": [{"min": 10000, "max": 20000, "a": 1183.9, "b": 1.295}], "section_table": "civil_4"}, {"name": "Здание радиологического отделения", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 5000, "a": 2495.2, "b": 2.71}], "section_table": "civil_4"}, {"name": "Здание детского отделения", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 1678.8, "b": 1.405}, {"min": 10000, "max": 20000, "a": 2296.8, "b": 1.344}], "section_table": "civil_4"}, {"name": "Здание инфекционного отделения", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 6000, "a": 918.7, "b": 1.457}], "section_table": "civil_4"}, {"name": "Здание патологоанатомического отделения, здание патологоанатомического бюро, здание организации, производящей судебно-медицинскую экспертизу", "unit": "кв. м.", "intervals": [{"min": 350, "max": 1000, "a": 232.6, "b": 2.288}, {"min": 1000, "max": 3000, "a": 919.8, "b": 1.881}], "section_table": "civil_4"}, {"name": "Здание перинатального центра", "unit": "кв. м.", "intervals": [{"min": 9000, "max": 20000, "a": 10651.9, "b": 0.979}, {"min": 20000, "max": 35000, "a": 11921.4, "b": 0.886}], "section_table": "civil_4"}, {"name": "Здание родильного дома", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 15000, "a": 6267.1, "b": 1.214}, {"min": 15000, "max": 25000, "a": 11939.2, "b": 0.836}], "section_table": "civil_4"}, {"name": "Здание амбулатории", "unit": "кв. м.", "intervals": [{"min": 175, "max": 500, "a": 498.4, "b": 1.268}, {"min": 500, "max": 1000, "a": 563.8, "b": 1.138}, {"min": 1000, "max": 2000, "a": 688.0, "b": 1.014}], "section_table": "civil_4"}, {"name": "Здание врачебной амбулатории", "unit": "кв. м.", "intervals": [{"min": 600, "max": 3000, "a": 3224.9, "b": 1.655}, {"min": 3000, "max": 6000, "a": 4258.3, "b": 1.31}], "section_table": "civil_4"}, {"name": "Здание фельдшерско-акушерского пункта", "unit": "кв. м.", "intervals": [{"min": 50, "max": 100, "a": 8.4, "b": 2.881}, {"min": 100, "max": 1000, "a": 136.9, "b": 2.358}], "section_table": "civil_4"}, {"name": "Здание станции скорой медицинской помощи", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 4000, "a": 238.0, "b": 2.472}], "section_table": "civil_4"}, {"name": "Здание женской консультации", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 5000, "a": 490.7, "b": 1.522}], "section_table": "civil_4"}, {"name": "Здание дома ребенка, в том числе специализированного", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 3000, "a": 361.2, "b": 2.804}], "section_table": "civil_4"}, {"name": "Здание молочной кухни", "unit": "кв. м.", "intervals": [{"min": 50, "max": 150, "a": 3.1, "b": 4.385}], "section_table": "civil_4"}, {"name": "Здание медико-санитарной части, госпиталя", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 15000, "a": 1616.1, "b": 1.144}], "section_table": "civil_4"}, {"name": "Здание многопрофильного медицинского центра, здание центра общей врачебной практики и семейной медицины, здание центра здоровья, здание центра лечебного и профилактического питания, здание медицинского центра", "unit": "кв. м.", "intervals": [{"min": 10000, "max": 15000, "a": 5269.1, "b": 1.282}, {"min": 15000, "max": 25000, "a": 7632.7, "b": 1.124}], "section_table": "civil_4"}, {"name": "Здание реабилитационного центра, здание центра медицинской реабилитации для инвалидов и детей-инвалидов с последствиями детского церебрального паралича, здание центра медицинской реабилитации для воинов-интернационалистов, здание центра медицинской реабилитации, здание лечебно-реабилитационного центра, хосписа, здание дома (больницы) медицинской реабилитации", "unit": "кв. м.", "intervals": [{"min": 10000, "max": 20000, "a": 3181.1, "b": 1.805}, {"min": 20000, "max": 30000, "a": 6081.3, "b": 1.66}], "section_table": "civil_4"}, {"name": "Здание диагностического центра, здание консультативно-диагностического центра, в том числе детского, здание клинико-диагностического центра", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 15000, "a": 4789.9, "b": 1.8}, {"min": 15000, "max": 25000, "a": 5637.8, "b": 1.743}], "section_table": "civil_4"}, {"name": "Здание специализированного центра (по профилям медицинской помощи)", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 5000, "a": 296.5, "b": 2.335}, {"min": 5000, "max": 10000, "a": 7018.8, "b": 0.991}, {"min": 10000, "max": 20000, "a": 7696.4, "b": 0.923}], "section_table": "civil_4"}, {"name": "Здание психоневрологического диспансера", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 15000, "a": 7659.8, "b": 0.601}], "section_table": "civil_4"}, {"name": "Здание онкологического диспансера, здание эндокринологического диспансера, здание офтальмологического диспансера", "unit": "кв. м.", "intervals": [{"min": 15000, "max": 25000, "a": 3691.6, "b": 1.633}, {"min": 25000, "max": 55000, "a": 7400.9, "b": 1.485}], "section_table": "civil_4"}, {"name": "Здание противотуберкулезного диспансера, здание кожно-венерологического диспансера, здание наркологического диспансера, здание кардиологического диспансера, здание врачебно-физкультурного диспансера", "unit": "кв. м.", "intervals": [{"min": 10000, "max": 20000, "a": 3683.2, "b": 1.502}], "section_table": "civil_4"}, {"name": "Здание медицинского центра профилактики и борьбы со СПИД, здание медицинского центра профилактики", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 2562.0, "b": 1.68}], "section_table": "civil_4"}, {"name": "Здание центра медицины катастроф", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 7000, "a": 1267.4, "b": 2.21}], "section_table": "civil_4"}, {"name": "Здание стоматологической поликлиники, здание детской стоматологической поликлиники", "unit": "кв. м.", "intervals": [{"min": 800, "max": 1500, "a": 210.9, "b": 2.015}], "section_table": "civil_4"}, {"name": "Здание поликлиники", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 10000, "a": 240.1, "b": 1.983}, {"min": 10000, "max": 20000, "a": 4790.9, "b": 1.527}, {"min": 20000, "max": 30000, "a": 21389.5, "b": 0.697}], "section_table": "civil_4"}, {"name": "Здание детской поликлиники", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 5000, "a": 435.3, "b": 1.59}, {"min": 5000, "max": 10000, "a": 564.8, "b": 1.564}, {"min": 10000, "max": 15000, "a": 4659.4, "b": 1.155}], "section_table": "civil_4"}, {"name": "Здание поликлиники специализированной, здание центра профессиональной патологии, здание психотерапевтической поликлиники, здание физиотерапевтической поликлиники, здание поликлиники медицинской реабилитации, здание консультативно-диагностической поликлиники", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 421.8, "b": 2.208}, {"min": 10000, "max": 20000, "a": 6134.5, "b": 1.637}, {"min": 20000, "max": 30000, "a": 22089.0, "b": 0.839}], "section_table": "civil_4"}, {"name": "Здание медицинской лаборатории, здание станции переливания крови", "unit": "кв. м.", "intervals": [{"min": 400, "max": 1000, "a": 237.0, "b": 2.881}], "section_table": "civil_4"}, {"name": "Сооружение теплого перехода между корпусами объектов лечебного обеспечения", "unit": "кв. м.", "intervals": [{"min": 75, "max": 500, "a": 12.0, "b": 2.095}], "section_table": "civil_4"}, {"name": "Здание пищеблока для объектов лечебного обеспечения", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 2000, "a": 357.0, "b": 1.809}], "section_table": "civil_4"}, {"name": "Здание дезинфекционного центра, станции", "unit": "кв. м.", "intervals": [{"min": 500, "max": 1000, "a": 278.7, "b": 3.986}, {"min": 1000, "max": 2000, "a": 611.8, "b": 3.653}], "section_table": "civil_4"}], "coeffs": []}, {"name": "3.5 — Лечебно-оздоровительные объекты, объекты отдыха", "objects": [{"name": "Здание санатория, здание детского санатория, здание профилактория", "unit": "кв. м.", "intervals": [{"min": 10000, "max": 15000, "a": 6380.9, "b": 1.52}, {"min": 15000, "max": 25000, "a": 8760.2, "b": 1.361}], "section_table": "civil_5"}, {"name": "Здание дома отдыха, здание туристической базы, здание (сооружение) детского лагеря", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 2124.5, "b": 1.263}, {"min": 10000, "max": 15000, "a": 2773.9, "b": 1.199}], "section_table": "civil_5"}, {"name": "Спальный корпус (инфраструктура санатория)", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 4000, "a": 124.2, "b": 1.535}, {"min": 4000, "max": 7000, "a": 515.7, "b": 1.437}], "section_table": "civil_5"}, {"name": "Административно-хозяйственный блок (инфраструктура санатория)", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 7000, "a": 1342.6, "b": 1.405}], "section_table": "civil_5"}], "coeffs": [{"name": "Проектирование зданий и комплексов летнего функционирования", "value": 0.5}]}, {"name": "3.6 — Объекты ветеринарии", "objects": [{"name": "Здание ветеринарного лечебно-профилактического учреждения, здание ветеринарной станции, здание амбулатории ветеринарной станции, здание поликлиники ветеринарной, здание амбулатории ветеринарной, здание диспансера ветеринарного, здание лечебно-операционного корпуса ветеринарии, здание ветеринарной клиники, здание приюта для домашних животных, здание карантинного корпуса ветеринарии", "unit": "кв. м.", "intervals": [{"min": 400, "max": 1500, "a": 64.3, "b": 3.404}], "section_table": "civil_6"}], "coeffs": []}, {"name": "3.7 — Объекты спорта", "objects": [{"name": "Сооружение крытой арены для единоборств", "unit": "кв. м.", "intervals": [{"min": 500, "max": 1000, "a": 266.2, "b": 1.716}, {"min": 1000, "max": 3000, "a": 311.3, "b": 1.671}, {"min": 3000, "max": 5000, "a": 1674.6, "b": 1.217}, {"min": 5000, "max": 8000, "a": 2916.9, "b": 0.969}], "section_table": "civil_7"}, {"name": "Крытый ледовый каток, сооружение крытой ледовой арены", "unit": "кв. м.", "intervals": [{"min": 4000, "max": 7000, "a": 4994.5, "b": 1.02}, {"min": 7000, "max": 10000, "a": 6616.9, "b": 0.788}], "section_table": "civil_7"}, {"name": "Бассейн крытый", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 3000, "a": 1138.0, "b": 1.304}, {"min": 3000, "max": 6000, "a": 1780.0, "b": 1.09}], "section_table": "civil_7"}, {"name": "Сооружение велотрека открытое", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 8000, "a": 342.4, "b": 0.17}], "section_table": "civil_7"}, {"name": "Здание зала спортивного крытого универсального, здание зала спортивного крытого специализированного", "unit": "кв. м.", "intervals": [{"min": 500, "max": 1000, "a": 524.1, "b": 1.303}, {"min": 1000, "max": 2000, "a": 796.6, "b": 1.03}, {"min": 2000, "max": 4000, "a": 1798.8, "b": 0.529}], "section_table": "civil_7"}, {"name": "Здание центра спорта", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 10000, "a": 2920.1, "b": 1.595}, {"min": 10000, "max": 20000, "a": 13420.6, "b": 0.545}, {"min": 20000, "max": 40000, "a": 15190.2, "b": 0.456}], "section_table": "civil_7"}, {"name": "Сооружение открытого парка для экстремальных видов спорта", "unit": "га", "intervals": [{"min": 1, "max": 5, "a": 53.2, "b": 707.832}, {"min": 5, "max": 10, "a": 883.2, "b": 541.836}], "section_table": "civil_7"}, {"name": "Здание физкультурно-оздоровительного комплекса (ФОК)", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 2000, "a": 1236.1, "b": 0.787}, {"min": 2000, "max": 4000, "a": 1484.8, "b": 0.663}], "section_table": "civil_7"}, {"name": "Здание многофункционального спортивного комплекса", "unit": "кв. м.", "intervals": [{"min": 1500, "max": 5000, "a": 1218.9, "b": 0.755}, {"min": 5000, "max": 8000, "a": 1291.4, "b": 0.74}, {"min": 8000, "max": 13000, "a": 1632.8, "b": 0.697}], "section_table": "civil_7"}], "coeffs": []}, {"name": "3.8 — Объекты образования", "objects": [{"name": "Здание детского сада, здание детского сада-яслей", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 3000, "a": 1076.2, "b": 1.563}, {"min": 3000, "max": 4500, "a": 1461.6, "b": 1.434}, {"min": 4500, "max": 5500, "a": 2546.2, "b": 1.193}, {"min": 5500, "max": 7500, "a": 4665.0, "b": 0.808}], "section_table": "civil_8"}, {"name": "Здание средней школы, здание специализированной школы среднего образования", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 4973.4, "b": 0.863}, {"min": 10000, "max": 15000, "a": 6850.7, "b": 0.675}, {"min": 15000, "max": 25000, "a": 7664.0, "b": 0.621}], "section_table": "civil_8"}, {"name": "Здание начальной школы", "unit": "кв. м.", "intervals": [{"min": 2000, "max": 4000, "a": 708.6, "b": 1.458}, {"min": 4000, "max": 6000, "a": 1481.7, "b": 1.265}, {"min": 6000, "max": 9000, "a": 1670.2, "b": 1.234}], "section_table": "civil_8"}, {"name": "Здание школы-интерната", "unit": "кв. м.", "intervals": [{"min": 4000, "max": 8000, "a": 1698.6, "b": 1.302}], "section_table": "civil_8"}, {"name": "Здание спортивной школы", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 5000, "a": 394.6, "b": 1.589}], "section_table": "civil_8"}, {"name": "Здание театральной школы (студии), здание школы искусств, художественной школы, здание музыкальной школы", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 2500, "a": 748.5, "b": 1.664}, {"min": 2500, "max": 3500, "a": 1236.6, "b": 1.469}, {"min": 3500, "max": 5000, "a": 1949.1, "b": 1.265}], "section_table": "civil_8"}, {"name": "Здание профессионального училища, здание учебно-производственного корпуса", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 5000, "a": 3389.6, "b": 1.225}, {"min": 5000, "max": 8000, "a": 4615.8, "b": 0.979}], "section_table": "civil_8"}, {"name": "Здание института, учебного корпуса, учебно-лабораторного корпуса высшего учебного заведения", "unit": "кв. м.", "intervals": [{"min": 10000, "max": 35000, "a": 15935.6, "b": 1.022}], "section_table": "civil_8"}], "coeffs": []}, {"name": "3.9 — Объекты культуры, искусства и истории", "objects": [{"name": "Здание библиотеки, здание архива", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 10000, "a": 462.5, "b": 1.361}, {"min": 10000, "max": 20000, "a": 2676.8, "b": 1.14}, {"min": 20000, "max": 40000, "a": 15951.3, "b": 0.476}], "section_table": "civil_9"}, {"name": "Здание концертного зала", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 10000, "a": 4382.7, "b": 1.29}], "section_table": "civil_9"}, {"name": "Здание дома творчества, здание многоцелевого центра искусств, здание дома национального искусства", "unit": "кв. м.", "intervals": [{"min": 1500, "max": 3000, "a": 1976.3, "b": 1.215}, {"min": 3000, "max": 5000, "a": 3066.0, "b": 0.852}, {"min": 5000, "max": 7000, "a": 5675.5, "b": 0.33}], "section_table": "civil_9"}, {"name": "Здание дома (дворца) культуры, здание клуба", "unit": "кв. м.", "intervals": [{"min": 400, "max": 1000, "a": 174.1, "b": 3.169}, {"min": 1000, "max": 2500, "a": 962.6, "b": 2.38}, {"min": 2500, "max": 5000, "a": 3280.2, "b": 1.453}], "section_table": "civil_9"}, {"name": "Здание музея, здание выставочного зала", "unit": "кв. м.", "intervals": [{"min": 700, "max": 5000, "a": 1612.4, "b": 4.174}, {"min": 5000, "max": 10000, "a": 11295.0, "b": 2.237}, {"min": 10000, "max": 20000, "a": 20191.0, "b": 1.348}, {"min": 20000, "max": 30000, "a": 25974.7, "b": 1.059}], "section_table": "civil_9"}, {"name": "Здание театра, здание музыкального театра, здание дома музыки", "unit": "кв. м.", "intervals": [{"min": 4000, "max": 15000, "a": 4135.3, "b": 2.001}, {"min": 15000, "max": 30000, "a": 10553.8, "b": 1.573}], "section_table": "civil_9"}], "coeffs": []}, {"name": "3.10 — Религиозные и культовые объекты", "objects": [{"name": "Здание церкви, здание мечети, здание собора, здание часовни, здание колокольни, здание минарета, здание костела, здание синагоги, здание ризницы", "unit": "куб. м.", "intervals": [{"min": 2000, "max": 13000, "a": 159.5, "b": 0.555}], "section_table": "civil_10"}, {"name": "Здание дома причта, административное здание монастыря, здание молельного дома, здание трапезной, здание иконописной мастерской, здание братского (сестринского) корпуса, здание церковного училища, здание церковно-приходской школы, здание семинарии, здание воскресной школы", "unit": "кв. м.", "intervals": [{"min": 500, "max": 2000, "a": 388.7, "b": 2.148}], "section_table": "civil_10"}], "coeffs": []}, {"name": "3.11 — Объекты научной и исследовательской деятельности", "objects": [{"name": "Здание исследовательского (экспериментального) корпуса института, здание научного центра, здание научно-исследовательского института", "unit": "кв. м.", "intervals": [{"min": 10000, "max": 30000, "a": 13675.4, "b": 1.19}, {"min": 30000, "max": 60000, "a": 15564.8, "b": 1.128}], "section_table": "civil_11"}, {"name": "Здание лабораторного корпуса, здание лаборатории, здание производственно-лабораторного корпуса, здание экспериментальной мастерской", "unit": "кв. м.", "intervals": [{"min": 2500, "max": 5000, "a": 3770.9, "b": 2.117}, {"min": 5000, "max": 8000, "a": 4093.5, "b": 2.053}, {"min": 8000, "max": 12000, "a": 4461.0, "b": 2.007}], "section_table": "civil_11"}], "coeffs": []}, {"name": "3.12 — Объекты торговли", "objects": [{"name": "Специализированные продовольственные магазины", "unit": "кв. м.", "intervals": [{"min": 0, "max": 999999, "a": 848.0, "b": 3.978}], "section_table": "civil_12"}, {"name": "Специализированные непродовольственные магазины", "unit": "кв. м.", "intervals": [{"min": 0, "max": 400, "a": 605.8, "b": 2.28}, {"min": 400, "max": 999999, "a": 963.4, "b": 1.386}], "section_table": "civil_12"}, {"name": "Универсальные магазины", "unit": "кв. м.", "intervals": [{"min": 0, "max": 999999, "a": 1597.2, "b": 2.95}], "section_table": "civil_12"}, {"name": "Торговые дома, торговые центры", "unit": "кв. м.", "intervals": [{"min": 0, "max": 999999, "a": 2694.1, "b": 2.056}], "section_table": "civil_12"}, {"name": "Рынки крытые", "unit": "кв. м.", "intervals": [{"min": 0, "max": 999999, "a": 2965.1, "b": 2.414}], "section_table": "civil_12"}], "coeffs": []}, {"name": "3.13 — Объекты общественного питания", "objects": [{"name": "Здание столовой", "unit": "посадочное место", "intervals": [{"min": 0, "max": 75, "a": 320.6, "b": 15.335}, {"min": 75, "max": 150, "a": 524.6, "b": 12.482}, {"min": 150, "max": 999999, "a": 1514.2, "b": 5.884}], "section_table": "civil_13"}, {"name": "Здание кафе", "unit": "посадочное место", "intervals": [{"min": 0, "max": 50, "a": 638.8, "b": 13.106}, {"min": 50, "max": 100, "a": 783.7, "b": 10.208}, {"min": 100, "max": 999999, "a": 922.0, "b": 8.827}], "section_table": "civil_13"}, {"name": "Здание ресторана", "unit": "посадочное место", "intervals": [{"min": 0, "max": 75, "a": 1186.2, "b": 10.347}, {"min": 75, "max": 150, "a": 1297.9, "b": 8.857}, {"min": 150, "max": 200, "a": 1435.0, "b": 7.944}, {"min": 200, "max": 999999, "a": 2540.3, "b": 2.416}], "section_table": "civil_13"}], "coeffs": []}, {"name": "3.14 — Административно-деловое управление", "objects": [{"name": "Офисное здание, здание делового центра", "unit": "кв. м.", "intervals": [{"min": 500, "max": 1000, "a": 625.4, "b": 2.364}, {"min": 1000, "max": 5000, "a": 1784.2, "b": 1.205}, {"min": 5000, "max": 10000, "a": 2413.7, "b": 1.078}, {"min": 10000, "max": 20000, "a": 2757.2, "b": 1.044}, {"min": 20000, "max": 30000, "a": 4132.2, "b": 0.975}], "section_table": "civil_14"}, {"name": "Здание банка", "unit": "кв. м.", "intervals": [{"min": 4000, "max": 10000, "a": 5535.3, "b": 1.548}], "section_table": "civil_14"}, {"name": "Здание органа государственной и региональной власти", "unit": "кв. м.", "intervals": [{"min": 4000, "max": 8000, "a": 3254.1, "b": 1.491}, {"min": 8000, "max": 12000, "a": 5800.5, "b": 1.172}], "section_table": "civil_14"}, {"name": "Здание органов местного самоуправления", "unit": "кв. м.", "intervals": [{"min": 300, "max": 1000, "a": 527.0, "b": 2.656}, {"min": 1000, "max": 2000, "a": 1859.4, "b": 1.324}, {"min": 2000, "max": 5000, "a": 1929.3, "b": 1.31}], "section_table": "civil_14"}, {"name": "Здание налоговой инспекции, здание таможенных органов", "unit": "кв. м.", "intervals": [{"min": 3500, "max": 7000, "a": 1859.9, "b": 1.344}, {"min": 7000, "max": 14000, "a": 2481.6, "b": 1.255}], "section_table": "civil_14"}, {"name": "Здание государственного фонда, здание государственного или муниципального учреждения", "unit": "кв. м.", "intervals": [{"min": 1000, "max": 3000, "a": 728.7, "b": 1.96}, {"min": 3000, "max": 6000, "a": 3234.3, "b": 1.124}], "section_table": "civil_14"}], "coeffs": []}, {"name": "3.15 — Объекты обеспечения безопасности, охраны правопорядка и правосудия", "objects": [{"name": "Здание суда", "unit": "кв. м.", "intervals": [{"min": 3000, "max": 5000, "a": 3664.4, "b": 0.449}], "section_table": "civil_15"}, {"name": "Здание прокуратуры, здание осуществления адвокатской деятельности, здание службы судебных приставов", "unit": "кв. м.", "intervals": [{"min": 1500, "max": 3000, "a": 1851.5, "b": 1.168}, {"min": 3000, "max": 6000, "a": 2709.2, "b": 0.882}], "section_table": "civil_15"}, {"name": "Объекты органов власти, обеспечивающих безопасность и охрану правопорядка", "unit": "кв. м.", "intervals": [{"min": 1500, "max": 3000, "a": 336.7, "b": 1.841}], "section_table": "civil_15"}], "coeffs": []}, {"name": "3.16 — Объекты обеспечения ликвидации чрезвычайных ситуаций", "objects": [{"name": "Здание пожарной части, здание пожарного депо", "unit": "кв. м.", "intervals": [{"min": 300, "max": 1000, "a": 1217.8, "b": 2.509}, {"min": 1000, "max": 2000, "a": 1525.9, "b": 2.201}, {"min": 2000, "max": 4000, "a": 2282.2, "b": 1.823}], "section_table": "civil_16"}, {"name": "Здание горноспасательной части (включая учебную шахту)", "unit": "кв. м.", "intervals": [{"min": 5000, "max": 12000, "a": 2777.0, "b": 1.823}], "section_table": "civil_16"}], "coeffs": []}, {"name": "3.17 — Объекты бытового обслуживания", "objects": [{"name": "Здание городской бани", "unit": "место", "intervals": [{"min": 0, "max": 50, "a": 108.5, "b": 19.615}, {"min": 50, "max": 100, "a": 309.0, "b": 15.603}], "section_table": "civil_17"}, {"name": "Здание общественной уборной, сооружение подземной общественной уборной", "unit": "кв. м.", "intervals": [{"min": 30, "max": 90, "a": 4.2, "b": 3.897}], "section_table": "civil_17"}], "coeffs": []}]}, {"id": "engineering", "name": "ИНЖЕНЕРНЫЕ СЕТИ И СООРУЖЕНИЯ (847/пр)", "type": "engineering", "categories": [{"name": "3.1 — Линейные сооружения слаботочной сети", "objects": [{"name": "Канализация л.с. сети из труб Ø≤125 мм, емкость до 2 отв.", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 13.4, "b": 0.399}, {"min": 500, "max": 1000, "a": 47.0, "b": 0.332}, {"min": 1000, "max": 3000, "a": 118.2, "b": 0.261}, {"min": 3000, "max": 5000, "a": 208.3, "b": 0.231}], "section_table": "eng_1"}, {"name": "Канализация л.с. сети из труб Ø≤125 мм, емкость до 6 отв.", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 13.5, "b": 0.528}, {"min": 500, "max": 1000, "a": 80.4, "b": 0.395}, {"min": 1000, "max": 3000, "a": 175.3, "b": 0.3}, {"min": 3000, "max": 5000, "a": 495.2, "b": 0.193}], "section_table": "eng_1"}, {"name": "Канализация л.с. сети из труб Ø≤125 мм, емкость до 12 отв.", "unit": "п.м", "intervals": [{"min": 50, "max": 100, "a": 14.7, "b": 0.741}, {"min": 100, "max": 500, "a": 23.6, "b": 0.651}, {"min": 500, "max": 1000, "a": 98.3, "b": 0.502}, {"min": 1000, "max": 3000, "a": 227.8, "b": 0.373}], "section_table": "eng_1"}, {"name": "Первый кабель л.с. сети в проектируемой канализации", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 61.8, "b": 0.095}, {"min": 500, "max": 1000, "a": 65.4, "b": 0.088}, {"min": 1000, "max": 3000, "a": 85.1, "b": 0.068}, {"min": 3000, "max": 5000, "a": 103.7, "b": 0.062}], "section_table": "eng_1"}, {"name": "Бронированный кабель л.с. сети в земле", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 48.3, "b": 0.124}, {"min": 500, "max": 1000, "a": 66.3, "b": 0.089}, {"min": 1000, "max": 3000, "a": 82.1, "b": 0.073}, {"min": 3000, "max": 6000, "a": 97.9, "b": 0.068}], "section_table": "eng_1"}, {"name": "Воздушное линейное сооружение слаботочной сети", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 59.6, "b": 0.096}, {"min": 500, "max": 1000, "a": 61.6, "b": 0.092}, {"min": 1000, "max": 3000, "a": 68.1, "b": 0.096}, {"min": 3000, "max": 6000, "a": 87.8, "b": 0.079}], "section_table": "eng_1"}]}, {"name": "3.2 — Линии наружного освещения", "objects": [{"name": "Линия наружного освещения воздушная", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 24.3, "b": 0.374}, {"min": 500, "max": 1000, "a": 93.3, "b": 0.236}, {"min": 1000, "max": 3000, "a": 233.0, "b": 0.096}, {"min": 3000, "max": 6000, "a": 391.2, "b": 0.043}], "section_table": "eng_2"}, {"name": "Линия наружного освещения кабельная", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 32.3, "b": 0.428}, {"min": 500, "max": 1000, "a": 115.3, "b": 0.262}, {"min": 1000, "max": 3000, "a": 251.9, "b": 0.125}, {"min": 3000, "max": 6000, "a": 437.4, "b": 0.064}], "section_table": "eng_2"}]}, {"name": "3.4 — Линейные сооружения сети водоснабжения", "objects": [{"name": "Водоснабжение Ø≤150 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 30.8, "b": 0.608}, {"min": 500, "max": 1000, "a": 86.2, "b": 0.497}, {"min": 1000, "max": 5000, "a": 313.9, "b": 0.269}, {"min": 5000, "max": 10000, "a": 442.9, "b": 0.243}], "section_table": "eng_3"}, {"name": "Водоснабжение Ø150–300 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 35.9, "b": 0.863}, {"min": 500, "max": 1000, "a": 181.4, "b": 0.572}, {"min": 1000, "max": 5000, "a": 569.9, "b": 0.184}, {"min": 5000, "max": 10000, "a": 808.2, "b": 0.136}], "section_table": "eng_3"}, {"name": "Водоснабжение Ø300–600 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 94.8, "b": 0.97}, {"min": 500, "max": 1000, "a": 126.5, "b": 0.906}, {"min": 1000, "max": 5000, "a": 607.9, "b": 0.425}, {"min": 5000, "max": 10000, "a": 956.5, "b": 0.355}], "section_table": "eng_3"}, {"name": "Водоснабжение Ø600–1000 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 107.3, "b": 1.475}, {"min": 500, "max": 1000, "a": 324.2, "b": 1.042}, {"min": 1000, "max": 5000, "a": 850.2, "b": 0.516}, {"min": 5000, "max": 10000, "a": 1008.4, "b": 0.484}], "section_table": "eng_3"}]}, {"name": "3.5 — Линейные сооружения сети водоотведения", "objects": [{"name": "Водоотведение Ø≤300 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 59.6, "b": 0.89}, {"min": 500, "max": 1000, "a": 183.5, "b": 0.642}, {"min": 1000, "max": 3000, "a": 281.5, "b": 0.544}], "section_table": "eng_4"}, {"name": "Водоотведение Ø300–600 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 77.4, "b": 1.16}, {"min": 500, "max": 1000, "a": 141.7, "b": 1.031}, {"min": 1000, "max": 3000, "a": 517.6, "b": 0.655}], "section_table": "eng_4"}, {"name": "Водоотведение Ø600–800 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 113.8, "b": 1.417}, {"min": 500, "max": 1000, "a": 166.3, "b": 1.311}, {"min": 1000, "max": 3000, "a": 716.9, "b": 0.951}], "section_table": "eng_4"}, {"name": "Водоотведение Ø800–1200 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 270.1, "b": 1.769}, {"min": 500, "max": 1000, "a": 322.6, "b": 1.663}, {"min": 1000, "max": 3000, "a": 570.1, "b": 1.416}], "section_table": "eng_4"}, {"name": "Водоотведение Ø1200–2000 мм, открытый способ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 335.2, "b": 2.641}, {"min": 500, "max": 1000, "a": 390.1, "b": 2.532}, {"min": 1000, "max": 3000, "a": 1289.2, "b": 1.633}], "section_table": "eng_4"}, {"name": "Камера индивидуальная на л.с. водоотведения Ø≤600 мм", "unit": "камера", "intervals": [{"min": 1, "max": 1, "a": 20.3, "b": 0, "_is_per_object": true}], "section_table": "eng_4"}, {"name": "Дюкерная камера на л.с. водоотведения", "unit": "камера", "intervals": [{"min": 1, "max": 1, "a": 128.1, "b": 0, "_is_per_object": true}], "section_table": "eng_4"}, {"name": "Дюкер через водные преграды", "unit": "п.м", "intervals": [{"min": 100, "max": 1000, "a": 178.9, "b": 4.424}], "section_table": "eng_4"}]}, {"name": "3.6 — Линейные сооружения сети теплоснабжения", "objects": [{"name": "Теплоснабжение в ППУ изоляции, Ø≤200 мм, непроходной канал", "unit": "п.м (2-тр.)", "intervals": [{"min": 100, "max": 500, "a": 185.3, "b": 2.167}, {"min": 500, "max": 1000, "a": 306.1, "b": 1.925}, {"min": 1000, "max": 5000, "a": 1084.1, "b": 1.148}], "section_table": "eng_5"}, {"name": "Теплоснабжение в ППУ изоляции, Ø200–350 мм, непроходной канал", "unit": "п.м (2-тр.)", "intervals": [{"min": 100, "max": 500, "a": 303.5, "b": 2.888}, {"min": 500, "max": 1000, "a": 424.7, "b": 2.646}, {"min": 1000, "max": 5000, "a": 1555.9, "b": 1.515}], "section_table": "eng_5"}, {"name": "Теплоснабжение в ППУ изоляции, Ø350–500 мм, непроходной канал", "unit": "п.м (2-тр.)", "intervals": [{"min": 100, "max": 500, "a": 504.6, "b": 4.287}, {"min": 500, "max": 1000, "a": 613.0, "b": 4.071}, {"min": 1000, "max": 5000, "a": 1813.1, "b": 2.871}], "section_table": "eng_5"}, {"name": "Теплоснабжение в ППУ изоляции, Ø500–1100 мм, непроходной канал", "unit": "п.м (2-тр.)", "intervals": [{"min": 100, "max": 500, "a": 552.9, "b": 5.488}, {"min": 500, "max": 1000, "a": 809.4, "b": 5.219}, {"min": 1000, "max": 5000, "a": 2067.2, "b": 3.961}], "section_table": "eng_5"}, {"name": "Теплоснабжение в ППУ изоляции, Ø>1100 мм, непроходной канал", "unit": "п.м (2-тр.)", "intervals": [{"min": 100, "max": 500, "a": 751.1, "b": 8.448}, {"min": 500, "max": 1000, "a": 1056.5, "b": 7.837}, {"min": 1000, "max": 5000, "a": 3057.7, "b": 5.836}], "section_table": "eng_5"}]}, {"name": "3.7 — Насосные станции", "objects": [{"name": "Насосная станция водоснабжения, куб.м/ч", "unit": "куб.м/ч", "intervals": [{"min": 100, "max": 250, "a": 473.5, "b": 2.666}, {"min": 250, "max": 500, "a": 732.7, "b": 1.63}, {"min": 500, "max": 1000, "a": 832.4, "b": 1.43}, {"min": 1000, "max": 3000, "a": 1500.4, "b": 0.762}], "section_table": "eng_6"}, {"name": "Насосная станция водоотведения, куб.м/ч", "unit": "куб.м/ч", "intervals": [{"min": 200, "max": 600, "a": 672.1, "b": 0.98}, {"min": 600, "max": 1000, "a": 821.8, "b": 0.749}, {"min": 1000, "max": 1200, "a": 1093.1, "b": 0.477}], "section_table": "eng_6"}]}, {"name": "3.8 — ЦТП, ИТП", "objects": [{"name": "ЦТП, ИТП (без насосов ХВ), Гкал/ч", "unit": "Гкал/ч", "intervals": [{"min": 1, "max": 1.5, "a": 382.5, "b": 250.769}, {"min": 1.5, "max": 5, "a": 594.0, "b": 109.739}, {"min": 5, "max": 10, "a": 688.1, "b": 90.932}, {"min": 10, "max": 20, "a": 1143.4, "b": 45.404}, {"min": 20, "max": 25, "a": 1680.1, "b": 18.566}], "section_table": "eng_7"}, {"name": "Узел учета тепловой энергии автоматизированный", "unit": "Гкал/ч", "intervals": [{"min": 0, "max": 0.5, "a": 52.5, "b": 0}, {"min": 0.5, "max": 1, "a": 10.5, "b": 83.958}, {"min": 1, "max": 5, "a": 66.9, "b": 27.56}, {"min": 5, "max": 10, "a": 105.7, "b": 19.798}], "section_table": "eng_7"}]}, {"name": "3.9 — Подземные сооружения коллекторов", "objects": [{"name": "Коллектор открытым способом, протяженностью", "unit": "п.м", "intervals": [{"min": 50, "max": 100, "a": 91.0, "b": 5.372}, {"min": 100, "max": 500, "a": 142.5, "b": 4.858}, {"min": 500, "max": 900, "a": 365.9, "b": 4.411}, {"min": 900, "max": 1800, "a": 521.8, "b": 4.238}], "section_table": "eng_8"}, {"name": "Коллектор закрытым способом, Ø≤3.6 м", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 470.8, "b": 10.764}, {"min": 500, "max": 1000, "a": 1643.8, "b": 8.418}], "section_table": "eng_8"}]}, {"name": "3.11 — Кабельные линии электропередачи", "objects": [{"name": "Кабельная линия до 20 кВ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 17.7, "b": 0.234}, {"min": 500, "max": 1000, "a": 30.3, "b": 0.209}, {"min": 1000, "max": 3000, "a": 53.1, "b": 0.186}, {"min": 3000, "max": 6000, "a": 93.3, "b": 0.172}, {"min": 6000, "max": 10000, "a": 138.7, "b": 0.165}], "section_table": "eng_11"}, {"name": "Кабельная линия до 35 кВ", "unit": "п.м", "intervals": [{"min": 100, "max": 500, "a": 27.0, "b": 0.402}, {"min": 500, "max": 1000, "a": 29.2, "b": 0.398}, {"min": 1000, "max": 2500, "a": 54.1, "b": 0.373}, {"min": 2500, "max": 5000, "a": 87.8, "b": 0.359}], "section_table": "eng_11"}]}, {"name": "3.12 — Закрытые подземные переходы сетей ИТО", "objects": [{"name": "Закрытый переход ГНБ, Ø≤250 мм", "unit": "п.м", "intervals": [{"min": 30, "max": 100, "a": 79.6, "b": 1.592}, {"min": 100, "max": 200, "a": 131.2, "b": 1.075}], "section_table": "eng_12"}, {"name": "Закрытый переход ГНБ, Ø>250 мм", "unit": "п.м", "intervals": [{"min": 30, "max": 100, "a": 86.4, "b": 2.054}, {"min": 100, "max": 200, "a": 150.9, "b": 1.41}], "section_table": "eng_12"}, {"name": "Закрытый переход продавливание/прокол, Ø≤1000 мм", "unit": "п.м", "intervals": [{"min": 30, "max": 100, "a": 95.4, "b": 2.977}, {"min": 100, "max": 150, "a": 208.6, "b": 1.846}, {"min": 150, "max": 250, "a": 212.7, "b": 1.819}, {"min": 250, "max": 500, "a": 222.0, "b": 1.781}], "section_table": "eng_12"}, {"name": "Закрытый переход продавливание/прокол, Ø>1000 мм", "unit": "п.м", "intervals": [{"min": 30, "max": 100, "a": 99.9, "b": 3.528}, {"min": 100, "max": 150, "a": 221.0, "b": 2.317}, {"min": 150, "max": 250, "a": 223.2, "b": 2.302}, {"min": 250, "max": 500, "a": 233.6, "b": 2.26}], "section_table": "eng_12"}]}, {"name": "3.13 — Трансформаторные подстанции 6-10 кВ", "objects": [{"name": "КТП киоскового типа, до 1×630 кВА", "unit": "подстанция", "intervals": [{"min": 1, "max": 1, "a": 80.8, "b": 0, "_is_per_object": true}], "section_table": "eng_13"}, {"name": "КТП киоскового типа, 1×1000 кВА и выше", "unit": "подстанция", "intervals": [{"min": 1, "max": 1, "a": 172.7, "b": 0, "_is_per_object": true}], "section_table": "eng_13"}, {"name": "Закрытый распределительный пункт 6-20 кВ, до 16 ячеек", "unit": "пункт", "intervals": [{"min": 1, "max": 1, "a": 1094.0, "b": 0, "_is_per_object": true}], "section_table": "eng_13"}, {"name": "Секционирующий пункт 6-20 кВ с выключателем", "unit": "пункт", "intervals": [{"min": 1, "max": 1, "a": 33.7, "b": 0, "_is_per_object": true}], "section_table": "eng_13"}]}, {"name": "3.14 — Здания котельных", "objects": [{"name": "Котельная блок-модульная, 1-5 Гкал/ч", "unit": "Гкал/ч", "intervals": [{"min": 1, "max": 5, "a": 2756.0, "b": 182.961}], "section_table": "eng_14"}, {"name": "Котельная блок-модульная, 5-20 Гкал/ч", "unit": "Гкал/ч", "intervals": [{"min": 5, "max": 20, "a": 3190.5, "b": 96.048}], "section_table": "eng_14"}, {"name": "Котельная блок-модульная, 20-50 Гкал/ч", "unit": "Гкал/ч", "intervals": [{"min": 20, "max": 50, "a": 3439.7, "b": 83.59}], "section_table": "eng_14"}, {"name": "Котельная блок-модульная, 50-150 Гкал/ч", "unit": "Гкал/ч", "intervals": [{"min": 50, "max": 150, "a": 3598.8, "b": 80.408}], "section_table": "eng_14"}]}, {"name": "3.15 — Дизельные электростанции", "objects": [{"name": "Дизельная электростанция, 300-500 кВт", "unit": "кВт", "intervals": [{"min": 300, "max": 500, "a": 224.9, "b": 1.742}], "section_table": "eng_15"}, {"name": "Дизельная электростанция, 500-900 кВт", "unit": "кВт", "intervals": [{"min": 500, "max": 900, "a": 425.2, "b": 1.342}], "section_table": "eng_15"}, {"name": "Дизельная электростанция, 900-1800 кВт", "unit": "кВт", "intervals": [{"min": 900, "max": 1800, "a": 463.7, "b": 1.299}], "section_table": "eng_15"}]}, {"name": "3.16-3.17 — Воздушные линии электропередачи", "objects": [{"name": "ВЛ до 1 кВ, 1-5 км", "unit": "км", "intervals": [{"min": 1, "max": 5, "a": 21.2, "b": 30.176}], "section_table": "eng_16"}, {"name": "ВЛ до 1 кВ, 5-10 км", "unit": "км", "intervals": [{"min": 5, "max": 10, "a": 47.2, "b": 24.977}], "section_table": "eng_16"}, {"name": "ВЛ до 1 кВ, 10-20 км", "unit": "км", "intervals": [{"min": 10, "max": 20, "a": 58.6, "b": 23.839}], "section_table": "eng_16"}, {"name": "ВЛ свыше 1 до 20 кВ, 1-5 км", "unit": "км", "intervals": [{"min": 1, "max": 5, "a": 33.0, "b": 39.9}], "section_table": "eng_16"}, {"name": "ВЛ свыше 1 до 20 кВ, 5-10 км", "unit": "км", "intervals": [{"min": 5, "max": 10, "a": 64.9, "b": 33.52}], "section_table": "eng_16"}, {"name": "ВЛ свыше 1 до 20 кВ, 10-20 км", "unit": "км", "intervals": [{"min": 10, "max": 20, "a": 85.0, "b": 31.509}], "section_table": "eng_16"}]}]}]};
+const SECTIONS_DATA = {"tables": {"civil_1": {"name": "Жилые объекты для постоянного проживания", "objects": {"Индивидуальный жилой дом": {"П": [0.5, 4.0, 21.1, 29.3, 0, 6.2, 5.7, 4.8, 1.9, 1.2, 0, 0, 1.0, 4.2, 6.0, 3.9, 1.0, 1.0, 2.0, 6.2], "Р": [0.5, 2.5, 25.8, 30.1, 0, 7.6, 7.1, 5.9, 4.1, 2.3, 0, 0, 1.0, 1.8, 0, 4.1, 1.0, 0, 0, 6.2], "П+Р": [0.5, 3.1, 23.9, 29.8, 0, 7.0, 6.5, 5.5, 3.2, 1.9, 0, 0, 1.0, 2.8, 2.4, 4.0, 1.0, 0.4, 0.8, 6.2]}, "Малоэтажный многоквартирный дом": {"П": [0.5, 4.0, 23.1, 25.6, 0, 6.2, 7.1, 4.8, 1.9, 1.7, 0, 0, 1.0, 4.1, 6.0, 3.9, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.5, 27.0, 25.5, 0, 7.6, 11.3, 5.8, 3.7, 2.8, 0, 0, 1.0, 1.5, 0, 3.7, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.1, 25.4, 25.6, 0, 7.0, 9.6, 5.4, 3.0, 2.4, 0, 0, 1.0, 2.5, 2.4, 3.8, 1.0, 0.4, 0.8, 6.1]}, "Многоквартирный дом до 9 этажей": {"П": [0.5, 4.0, 27.9, 22.1, 0, 6.2, 5.2, 4.8, 1.9, 2.1, 0, 0, 1.2, 4.1, 6.0, 3.9, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.5, 33.4, 23.6, 0, 7.7, 7.1, 5.7, 3.2, 3.4, 0, 0, 1.4, 1.2, 0, 3.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.1, 31.3, 22.8, 0, 7.1, 6.3, 5.3, 2.7, 2.9, 0, 0, 1.4, 2.4, 2.4, 3.5, 1.0, 0.4, 0.8, 6.1]}, "Многоквартирный дом 10+ этажей": {"П": [0.5, 4.0, 27.9, 22.1, 0, 6.2, 5.2, 6.0, 1.9, 2.1, 0, 0, 0, 4.1, 6.0, 3.9, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.5, 33.4, 23.6, 0, 7.7, 7.1, 7.1, 3.2, 3.4, 0, 0, 0, 1.2, 0, 3.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.1, 31.3, 22.8, 0, 7.1, 6.3, 6.7, 2.7, 2.9, 0, 0, 0, 2.4, 2.4, 3.5, 1.0, 0.4, 0.8, 6.1]}}, "_default": {"П": [0.5, 4.0, 27.9, 22.1, 0, 6.2, 5.2, 4.8, 1.9, 2.1, 0, 0, 1.2, 4.1, 6.0, 3.9, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.5, 33.4, 23.6, 0, 7.7, 7.1, 5.7, 3.2, 3.4, 0, 0, 1.4, 1.2, 0, 3.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.1, 31.3, 22.8, 0, 7.1, 6.3, 5.3, 2.7, 2.9, 0, 0, 1.4, 2.4, 2.4, 3.5, 1.0, 0.4, 0.8, 6.1]}}, "civil_2": {"name": "Жилые объекты специализированного назначения", "objects": {"Здание общежития": {"П": [0.5, 4.0, 20.6, 16.0, 5.7, 7.6, 6.7, 5.7, 3.8, 2.2, 0, 0, 2.0, 3.2, 6.0, 5.8, 1.0, 1.0, 2.0, 6.2], "Р": [0.5, 2.5, 26.3, 16.5, 6.2, 9.0, 8.0, 7.1, 4.8, 3.4, 0, 0, 2.0, 1.7, 0, 4.8, 1.0, 0, 0, 6.2], "П+Р": [0.5, 3.1, 24.0, 16.4, 6.0, 8.4, 7.5, 6.5, 4.4, 2.9, 0, 0, 2.0, 2.3, 2.4, 5.2, 1.0, 0.4, 0.8, 6.2]}, "Дом-интернат для престарелых и инвалидов": {"П": [0.5, 4.0, 17.7, 13.5, 9.4, 8.1, 6.7, 4.0, 3.3, 2.0, 2.5, 0, 2.0, 4.8, 6.0, 5.3, 1.0, 1.0, 2.0, 6.2], "Р": [0.5, 2.5, 20.0, 11.1, 10.1, 12.8, 10.2, 6.1, 4.8, 3.2, 3.5, 0, 2.0, 1.2, 0, 4.8, 1.0, 0, 0, 6.2], "П+Р": [0.5, 3.1, 19.1, 12.0, 9.8, 10.9, 8.9, 5.3, 4.2, 2.7, 3.1, 0, 2.0, 2.6, 2.4, 5.0, 1.0, 0.4, 0.8, 6.2]}, "Детский дом, социальный приют": {"П": [0.5, 4.0, 19.1, 14.6, 9.4, 8.1, 6.7, 4.0, 3.3, 2.0, 0, 0, 2.0, 4.8, 6.0, 5.3, 1.0, 1.0, 2.0, 6.2], "Р": [0.5, 2.5, 22.1, 12.4, 10.1, 12.8, 10.3, 6.1, 4.8, 3.2, 0, 0, 2.0, 1.2, 0, 4.8, 1.0, 0, 0, 6.2], "П+Р": [0.5, 3.1, 21.1, 13.6, 9.8, 10.9, 8.9, 5.3, 4.2, 2.7, 0, 0, 2.0, 2.6, 2.4, 5.0, 1.0, 0.4, 0.8, 6.2]}}, "_default": {"П": [0.5, 4.0, 20.6, 16.0, 5.7, 7.6, 6.7, 5.7, 3.8, 2.2, 0, 0, 2.0, 3.2, 6.0, 5.8, 1.0, 1.0, 2.0, 6.2], "Р": [0.5, 2.5, 26.3, 16.5, 6.2, 9.0, 8.0, 7.1, 4.8, 3.4, 0, 0, 2.0, 1.7, 0, 4.8, 1.0, 0, 0, 6.2], "П+Р": [0.5, 3.1, 24.0, 16.4, 6.0, 8.4, 7.5, 6.5, 4.4, 2.9, 0, 0, 2.0, 2.3, 2.4, 5.2, 1.0, 0.4, 0.8, 6.2]}}, "civil_3": {"name": "Гостиницы и иные объекты для временного проживания", "objects": {"Здание гостиницы": {"П": [0.5, 4.0, 16.8, 20.7, 5.1, 7.1, 6.2, 5.7, 3.8, 2.1, 3.1, 0, 0, 3.1, 6.0, 5.7, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.5, 16.2, 25.4, 6.1, 8.6, 7.6, 6.7, 4.8, 3.1, 4.6, 0, 0, 2.1, 0, 4.7, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.1, 16.4, 23.6, 5.7, 8.0, 7.0, 6.3, 4.4, 2.7, 4.0, 0, 0, 2.5, 2.4, 5.1, 1.0, 0.4, 0.8, 6.1]}}, "_default": {"П": [0.5, 4.0, 16.8, 20.7, 5.1, 7.1, 6.2, 5.7, 3.8, 2.1, 3.1, 0, 0, 3.1, 6.0, 5.7, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.5, 16.2, 25.4, 6.1, 8.6, 7.6, 6.7, 4.8, 3.1, 4.6, 0, 0, 2.1, 0, 4.7, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.1, 16.4, 23.6, 5.7, 8.0, 7.0, 6.3, 4.4, 2.7, 4.0, 0, 0, 2.5, 2.4, 5.1, 1.0, 0.4, 0.8, 6.1]}}, "civil_4": {"name": "Объекты лечебного обеспечения", "objects": {"Больница общего профиля": {"П": [0.75, 2.0, 19.5, 17.5, 12.5, 9.0, 4.0, 5.5, 2.5, 2.5, 2.5, 3.0, 2.0, 1.5, 2.0, 3.0, 1.5, 0.75, 1.0, 7.0], "Р": [0, 2.5, 19.5, 20.5, 11.5, 10.0, 5.5, 7.0, 3.5, 3.5, 3.5, 3.5, 2.5, 0, 0, 0, 0, 0, 0, 7.0], "П+Р": [0.25, 2.0, 19.0, 18.75, 11.25, 9.25, 4.75, 6.25, 3.0, 3.0, 3.0, 2.75, 2.5, 1.0, 1.5, 2.25, 1.25, 0.5, 0.75, 7.0]}, "Поликлиника": {"П": [0.75, 2.0, 20.5, 17.5, 12.5, 11.5, 4.0, 5.5, 2.5, 2.5, 2.5, 0.5, 1.0, 1.5, 2.0, 3.0, 1.5, 0.75, 1.0, 7.0], "Р": [0, 2.5, 19.5, 20.5, 13.0, 13.0, 5.5, 7.0, 3.5, 3.5, 3.5, 0.5, 1.0, 0, 0, 0, 0, 0, 0, 7.0], "П+Р": [0.25, 2.0, 19.5, 18.75, 12.25, 12.0, 4.5, 6.25, 3.0, 3.0, 2.75, 0.5, 1.0, 1.0, 1.5, 2.25, 1.25, 0.5, 0.75, 7.0]}}, "_default": {"П": [0.75, 2.0, 19.5, 17.5, 12.5, 9.0, 4.0, 5.5, 2.5, 2.5, 2.5, 3.0, 2.0, 1.5, 2.0, 3.0, 1.5, 0.75, 1.0, 7.0], "Р": [0, 2.5, 19.5, 20.5, 11.5, 10.0, 5.5, 7.0, 3.5, 3.5, 3.5, 3.5, 2.5, 0, 0, 0, 0, 0, 0, 7.0], "П+Р": [0.25, 2.0, 19.0, 18.75, 11.25, 9.25, 4.75, 6.25, 3.0, 3.0, 3.0, 2.75, 2.5, 1.0, 1.5, 2.25, 1.25, 0.5, 0.75, 7.0]}}, "civil_5": {"name": "Лечебно-оздоровительные объекты, объекты отдыха", "objects": {"Санаторий, профилакторий": {"П": [0.5, 4.0, 15.7, 20.3, 5.8, 7.6, 6.7, 5.7, 3.8, 2.2, 2.5, 0, 0, 3.2, 6.0, 5.8, 1.0, 1.0, 2.0, 6.2], "Р": [0.5, 2.5, 15.6, 25.5, 6.3, 9.0, 8.1, 7.1, 4.8, 3.4, 3.5, 0, 0, 1.7, 0, 4.8, 1.0, 0, 0, 6.2], "П+Р": [0.5, 3.1, 15.7, 23.5, 6.1, 8.4, 7.5, 6.5, 4.4, 2.9, 3.1, 0, 0, 2.3, 2.4, 5.2, 1.0, 0.4, 0.8, 6.2]}}, "_default": {"П": [0.5, 4.0, 15.7, 20.3, 5.8, 7.6, 6.7, 5.7, 3.8, 2.2, 2.5, 0, 0, 3.2, 6.0, 5.8, 1.0, 1.0, 2.0, 6.2], "Р": [0.5, 2.5, 15.6, 25.5, 6.3, 9.0, 8.1, 7.1, 4.8, 3.4, 3.5, 0, 0, 1.7, 0, 4.8, 1.0, 0, 0, 6.2], "П+Р": [0.5, 3.1, 15.7, 23.5, 6.1, 8.4, 7.5, 6.5, 4.4, 2.9, 3.1, 0, 0, 2.3, 2.4, 5.2, 1.0, 0.4, 0.8, 6.2]}}, "civil_7": {"name": "Объекты спорта", "objects": {"Спортивное сооружение (типовое)": {"П": [0.5, 4.0, 17.8, 22.3, 9.0, 5.7, 4.3, 3.3, 2.4, 2.1, 2.5, 0, 0, 5.6, 6.0, 4.4, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 17.9, 27.1, 13.0, 7.6, 5.7, 4.3, 3.3, 3.2, 3.5, 0, 0, 1.2, 0, 3.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 17.9, 25.2, 11.4, 6.8, 5.1, 3.9, 2.9, 2.8, 3.1, 0, 0, 3.0, 2.4, 3.7, 1.0, 0.4, 0.8, 6.1]}, "Бассейн крытый": {"П": [0.5, 4.0, 16.2, 19.3, 9.1, 5.7, 5.2, 3.3, 2.4, 2.1, 2.5, 3.6, 0, 5.6, 6.0, 4.4, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 16.6, 23.3, 13.1, 7.1, 6.2, 4.3, 3.3, 3.1, 3.5, 5.1, 0, 1.1, 0, 3.3, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 16.5, 21.8, 11.5, 6.5, 5.8, 3.9, 2.9, 2.7, 3.1, 4.5, 0, 2.9, 2.4, 3.7, 1.0, 0.4, 0.8, 6.1]}}, "_default": {"П": [0.5, 4.0, 17.8, 22.3, 9.0, 5.7, 4.3, 3.3, 2.4, 2.1, 2.5, 0, 0, 5.6, 6.0, 4.4, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 17.9, 27.1, 13.0, 7.6, 5.7, 4.3, 3.3, 3.2, 3.5, 0, 0, 1.2, 0, 3.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 17.9, 25.2, 11.4, 6.8, 5.1, 3.9, 2.9, 2.8, 3.1, 0, 0, 3.0, 2.4, 3.7, 1.0, 0.4, 0.8, 6.1]}}, "civil_8": {"name": "Объекты образования", "objects": {"Детский сад": {"П": [0.5, 4.0, 17.0, 16.3, 12.0, 5.8, 4.9, 3.9, 2.9, 2.1, 2.5, 0, 0, 6.1, 6.0, 4.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 15.4, 21.7, 17.0, 7.8, 6.3, 5.3, 3.9, 3.1, 3.5, 0, 0, 1.1, 0, 3.9, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 16.2, 19.5, 15.0, 7.0, 5.7, 4.7, 3.5, 2.7, 3.1, 0, 0, 3.1, 2.4, 4.3, 1.0, 0.4, 0.8, 7.1]}, "Средняя школа": {"П": [0.5, 4.0, 14.1, 18.2, 13.0, 5.8, 4.9, 3.9, 2.9, 2.1, 2.5, 0, 0, 6.1, 6.0, 4.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 13.4, 22.0, 18.0, 7.6, 6.4, 5.2, 4.3, 3.3, 3.5, 0, 0, 1.1, 0, 4.2, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 13.7, 20.5, 16.0, 6.9, 5.8, 4.7, 3.7, 2.8, 3.1, 0, 0, 3.1, 2.4, 4.5, 1.0, 0.4, 0.8, 7.1]}, "ВУЗ, учебный корпус": {"П": [0.5, 4.0, 15.7, 16.5, 13.1, 5.8, 4.4, 3.4, 3.4, 2.1, 2.5, 0, 0, 6.1, 6.0, 5.4, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 14.5, 22.0, 19.1, 7.3, 5.3, 4.4, 4.4, 3.1, 3.5, 0, 0, 1.1, 0, 4.3, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 15.1, 19.8, 16.7, 6.7, 4.9, 4.0, 4.0, 2.7, 3.1, 0, 0, 3.1, 2.4, 4.7, 1.0, 0.4, 0.8, 7.1]}}, "_default": {"П": [0.5, 4.0, 17.0, 16.3, 12.0, 5.8, 4.9, 3.9, 2.9, 2.1, 2.5, 0, 0, 6.1, 6.0, 4.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 15.4, 21.7, 17.0, 7.8, 6.3, 5.3, 3.9, 3.1, 3.5, 0, 0, 1.1, 0, 3.9, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 16.2, 19.5, 15.0, 7.0, 5.7, 4.7, 3.5, 2.7, 3.1, 0, 0, 3.1, 2.4, 4.3, 1.0, 0.4, 0.8, 7.1]}}, "civil_9": {"name": "Объекты культуры, искусства и истории", "objects": {"Библиотека, архив": {"П": [0.5, 4.0, 16.6, 18.9, 9.0, 6.7, 5.2, 4.3, 3.3, 2.1, 2.5, 0, 0, 5.6, 6.0, 5.2, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 16.5, 25.1, 13.0, 7.6, 6.2, 5.2, 4.3, 3.2, 3.5, 0, 0, 1.2, 0, 4.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 16.5, 22.7, 11.4, 7.2, 5.8, 4.8, 3.9, 2.8, 3.1, 0, 0, 3.0, 2.4, 4.6, 1.0, 0.4, 0.8, 6.1]}, "Дом культуры, клуб": {"П": [0.5, 4.0, 18.2, 20.3, 10.1, 5.7, 4.8, 3.3, 2.4, 2.1, 2.5, 0, 0, 5.6, 6.0, 4.4, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 20.6, 26.3, 12.1, 6.7, 5.7, 4.3, 3.3, 3.1, 3.5, 0, 0, 1.1, 0, 3.3, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 19.6, 23.9, 11.3, 6.3, 5.3, 3.9, 3.0, 2.7, 3.1, 0, 0, 2.9, 2.4, 3.8, 1.0, 0.4, 0.8, 6.1]}, "Музей, выставочный зал": {"П": [0.5, 4.0, 18.7, 20.8, 9.1, 5.7, 4.8, 3.3, 2.4, 2.1, 2.5, 0, 0, 5.6, 6.0, 4.4, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 19.7, 26.1, 12.2, 7.1, 6.2, 4.3, 3.3, 3.2, 3.5, 0, 0, 1.2, 0, 3.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 19.3, 24.0, 11.0, 6.5, 5.6, 3.9, 2.9, 2.8, 3.1, 0, 0, 3.0, 2.4, 3.7, 1.0, 0.4, 0.8, 6.1]}}, "_default": {"П": [0.5, 4.0, 16.6, 18.9, 9.0, 6.7, 5.2, 4.3, 3.3, 2.1, 2.5, 0, 0, 5.6, 6.0, 5.2, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 16.5, 25.1, 13.0, 7.6, 6.2, 5.2, 4.3, 3.2, 3.5, 0, 0, 1.2, 0, 4.2, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 16.5, 22.7, 11.4, 7.2, 5.8, 4.8, 3.9, 2.8, 3.1, 0, 0, 3.0, 2.4, 4.6, 1.0, 0.4, 0.8, 6.1]}}, "civil_10": {"name": "Религиозные и культовые объекты", "objects": {"Храм, церковь, собор, мечеть, синагога": {"П": [0.5, 4.0, 21.5, 19.5, 10.1, 5.7, 4.8, 3.3, 2.4, 2.1, 0, 0, 0, 5.6, 6.0, 4.4, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 28.0, 22.4, 12.1, 6.7, 5.7, 4.3, 3.3, 3.1, 0, 0, 0, 1.1, 0, 3.3, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 25.5, 21.3, 11.3, 6.3, 5.3, 3.9, 2.9, 2.7, 0, 0, 0, 2.9, 2.4, 3.7, 1.0, 0.4, 0.8, 6.1]}}, "_default": {"П": [0.5, 4.0, 21.5, 19.5, 10.1, 5.7, 4.8, 3.3, 2.4, 2.1, 0, 0, 0, 5.6, 6.0, 4.4, 1.0, 1.0, 2.0, 6.1], "Р": [0.5, 2.4, 28.0, 22.4, 12.1, 6.7, 5.7, 4.3, 3.3, 3.1, 0, 0, 0, 1.1, 0, 3.3, 1.0, 0, 0, 6.1], "П+Р": [0.5, 3.0, 25.5, 21.3, 11.3, 6.3, 5.3, 3.9, 2.9, 2.7, 0, 0, 0, 2.9, 2.4, 3.7, 1.0, 0.4, 0.8, 6.1]}}, "civil_12": {"name": "Объекты торговли", "objects": {"Магазин, торговый центр": {"П": [0.5, 4.0, 13.8, 19.3, 15.1, 4.8, 3.8, 3.9, 1.9, 1.6, 2.1, 2.1, 0, 6.1, 6.0, 3.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 15.1, 23.7, 18.1, 5.7, 4.8, 4.8, 2.9, 2.6, 3.2, 4.1, 0, 1.1, 0, 2.9, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 14.6, 22.0, 16.9, 5.3, 4.4, 4.4, 2.5, 2.2, 2.8, 3.3, 0, 3.1, 2.4, 3.3, 1.0, 0.4, 0.8, 7.1]}}, "_default": {"П": [0.5, 4.0, 13.8, 19.3, 15.1, 4.8, 3.8, 3.9, 1.9, 1.6, 2.1, 2.1, 0, 6.1, 6.0, 3.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 15.1, 23.7, 18.1, 5.7, 4.8, 4.8, 2.9, 2.6, 3.2, 4.1, 0, 1.1, 0, 2.9, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 14.6, 22.0, 16.9, 5.3, 4.4, 4.4, 2.5, 2.2, 2.8, 3.3, 0, 3.1, 2.4, 3.3, 1.0, 0.4, 0.8, 7.1]}}, "civil_13": {"name": "Объекты общественного питания", "objects": {"Столовая, кафе, ресторан": {"П": [0.5, 4.0, 17.2, 19.1, 13.1, 5.7, 3.8, 3.9, 1.9, 2.1, 1.6, 0, 0, 6.1, 6.0, 3.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 18.6, 23.4, 15.0, 7.6, 5.7, 5.3, 3.3, 3.1, 2.6, 0, 0, 1.1, 0, 3.3, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 18.0, 21.7, 14.3, 6.8, 4.9, 4.7, 2.8, 2.7, 2.2, 0, 0, 3.1, 2.4, 3.6, 1.0, 0.4, 0.8, 7.1]}}, "_default": {"П": [0.5, 4.0, 17.2, 19.1, 13.1, 5.7, 3.8, 3.9, 1.9, 2.1, 1.6, 0, 0, 6.1, 6.0, 3.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 18.6, 23.4, 15.0, 7.6, 5.7, 5.3, 3.3, 3.1, 2.6, 0, 0, 1.1, 0, 3.3, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 18.0, 21.7, 14.3, 6.8, 4.9, 4.7, 2.8, 2.7, 2.2, 0, 0, 3.1, 2.4, 3.6, 1.0, 0.4, 0.8, 7.1]}}, "civil_14": {"name": "Административно-деловое управление", "objects": {"Офисное здание, деловой центр": {"П": [0.5, 4.0, 19.8, 17.2, 10.1, 5.7, 3.8, 3.3, 2.9, 2.1, 2.5, 0, 0, 6.1, 6.0, 4.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 17.1, 27.1, 12.0, 7.6, 5.7, 4.3, 3.8, 3.1, 3.5, 0, 0, 1.1, 0, 3.7, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 18.2, 23.2, 11.2, 6.8, 4.9, 3.9, 3.4, 2.7, 3.1, 0, 0, 3.1, 2.4, 4.3, 1.0, 0.4, 0.8, 7.1]}, "Банк": {"П": [0.5, 4.0, 19.8, 17.2, 10.1, 5.7, 3.8, 3.3, 2.9, 2.1, 2.5, 0, 0, 6.1, 6.0, 4.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 17.1, 27.1, 12.0, 7.6, 5.7, 4.3, 3.8, 3.1, 3.5, 0, 0, 1.1, 0, 3.7, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 18.2, 23.2, 11.2, 6.8, 4.9, 3.9, 3.4, 2.7, 3.1, 0, 0, 3.1, 2.4, 4.3, 1.0, 0.4, 0.8, 7.1]}}, "_default": {"П": [0.5, 4.0, 19.8, 17.2, 10.1, 5.7, 3.8, 3.3, 2.9, 2.1, 2.5, 0, 0, 6.1, 6.0, 4.9, 1.0, 1.0, 2.0, 7.1], "Р": [0.5, 2.4, 17.1, 27.1, 12.0, 7.6, 5.7, 4.3, 3.8, 3.1, 3.5, 0, 0, 1.1, 0, 3.7, 1.0, 0, 0, 7.1], "П+Р": [0.5, 3.0, 18.2, 23.2, 11.2, 6.8, 4.9, 3.9, 3.4, 2.7, 3.1, 0, 0, 3.1, 2.4, 4.3, 1.0, 0.4, 0.8, 7.1]}}, "eng_1": {"name": "Линейные сооружения слаботочной сети", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 5.0, "ТКР": 72.5, "ПОС": 6.0, "ООС": 9.0, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 3.5, "ТКР": 88.0, "ПОС": 3.0, "ПБ": 0, "ООС": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 4.1, "ТКР": 81.8, "ПОС": 4.2, "ООС": 3.6, "ПБ": 0.8, "СМ": 5.0}}}, "eng_2": {"name": "Линии наружного освещения", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 77.0, "ПОС": 6.0, "ООС": 7.5, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 1.0, "ТКР": 90.5, "ПОС": 3.0, "ООС": 0, "ПБ": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 1.4, "ТКР": 85.1, "ПОС": 4.2, "ООС": 3.0, "ПБ": 0.8, "СМ": 5.0}}}, "eng_3": {"name": "Линейные сооружения сети водоснабжения", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 3.0, "ТКР": 73.0, "ПОС": 7.0, "ООС": 9.5, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 2.5, "ТКР": 86.5, "ПОС": 5.5, "ООС": 0, "ПБ": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 2.7, "ТКР": 81.1, "ПОС": 6.1, "ООС": 3.8, "ПБ": 0.8, "СМ": 5.0}}}, "eng_4": {"name": "Линейные сооружения сети водоотведения", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 3.0, "ТКР": 73.0, "ПОС": 7.0, "ООС": 9.5, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 2.5, "ТКР": 86.5, "ПОС": 5.5, "ООС": 0, "ПБ": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 2.7, "ТКР": 81.1, "ПОС": 6.1, "ООС": 3.8, "ПБ": 0.8, "СМ": 5.0}}}, "eng_5": {"name": "Линейные сооружения сети теплоснабжения", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 3.0, "ТКР": 73.5, "ПОС": 7.0, "ООС": 9.0, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 2.5, "ТКР": 87.0, "ПОС": 5.0, "ООС": 0, "ПБ": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 2.7, "ТКР": 81.6, "ПОС": 5.8, "ООС": 3.6, "ПБ": 0.8, "СМ": 5.0}}}, "eng_6": {"name": "Насосные станции", "linear": false, "objects": {"Автоматическая насосная станция": {"П": [0.5, 0, 0, 17.5, 36.0, 3.0, 3.0, 9.0, 7.0, 2.0, 0, 0, 0, 8.0, 6.0, 2.0, 0.5, 0.5, 0, 5.0], "Р": [0.5, 0, 0, 20.0, 38.0, 4.0, 4.0, 12.0, 8.5, 3.0, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 5.0], "П+Р": [0.5, 0, 0, 19.0, 37.2, 3.6, 3.6, 10.8, 7.9, 2.6, 0, 0, 0, 6.2, 2.4, 0.8, 0.2, 0.2, 0, 5.0]}}, "_default": [0.5, 0, 0, 19.0, 37.2, 3.6, 3.6, 10.8, 7.9, 2.6, 0, 0, 0, 6.2, 2.4, 0.8, 0.2, 0.2, 0, 5.0]}, "eng_7": {"name": "ЦТП, ИТП", "linear": false, "objects": {"Тепловые пункты отдельностоящие": {"П": [0.5, 1.0, 6.0, 12.5, 36.8, 3.0, 3.0, 9.0, 2.0, 8.0, 0, 0, 0, 2.0, 3.0, 2.0, 1.2, 0, 5.0, 5.0], "Р": [0.5, 1.0, 9.0, 15.6, 39.5, 3.0, 3.0, 10.4, 2.0, 9.0, 0, 0, 0, 2.0, 0, 0, 0, 0, 0, 5.0], "П+Р": [0.5, 1.0, 7.8, 14.4, 38.4, 3.0, 3.0, 9.8, 2.0, 8.6, 0, 0, 0, 2.0, 1.2, 0.8, 0.5, 0, 2.0, 5.0]}}, "_default": [0.5, 1.0, 7.8, 14.4, 38.4, 3.0, 3.0, 9.8, 2.0, 8.6, 0, 0, 0, 2.0, 1.2, 0.8, 0.5, 0, 2.0, 5.0]}, "eng_8": {"name": "Подземные сооружения коллекторов", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 60.5, "ОВ": 3.0, "ВК": 3.0, "ЭО": 10.0, "ООС": 5.0, "ПБ": 2.0, "ПОС": 9.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 65.5, "ОВ": 5.0, "ВК": 3.0, "ЭО": 10.0, "ООС": 0, "ПБ": 0, "ПОС": 9.0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 63.5, "ОВ": 4.2, "ВК": 3.0, "ЭО": 10.0, "ООС": 2.0, "ПБ": 0.8, "ПОС": 9.0, "СМ": 5.0}}}, "eng_11": {"name": "Кабельные линии электропередачи", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 3.0, "ТКР": 76.0, "ПОС": 6.0, "ООС": 7.5, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 89.5, "ПОС": 3.0, "ООС": 0, "ПБ": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 2.4, "ТКР": 84.1, "ПОС": 4.2, "ООС": 3.0, "ПБ": 0.8, "СМ": 5.0}}}, "eng_12": {"name": "Закрытые подземные переходы", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 76.5, "ПОС": 6.0, "ООС": 8.0, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 89.5, "ПОС": 3.0, "ООС": 0, "ПБ": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 84.3, "ПОС": 4.2, "ООС": 3.2, "ПБ": 0.8, "СМ": 5.0}}}, "eng_13": {"name": "Трансформаторные подстанции", "linear": false, "objects": {"КТП, распределительные пункты": {"П": [0.5, 4.0, 5.5, 19.0, 0, 1.0, 1.0, 47.0, 0, 0, 0, 0, 0, 5.0, 6.0, 6.0, 0, 0, 0, 5.0], "Р": [0.5, 3.0, 8.0, 25.0, 0, 1.0, 1.0, 50.0, 0, 0, 0, 0, 0, 6.5, 0, 0, 0, 0, 0, 5.0], "П+Р": [0.5, 3.4, 7.0, 22.6, 0, 1.0, 1.0, 48.8, 0, 0, 0, 0, 0, 5.9, 2.4, 2.4, 0, 0, 0, 5.0]}}, "_default": [0.5, 3.4, 7.0, 22.6, 0, 1.0, 1.0, 48.8, 0, 0, 0, 0, 0, 5.9, 2.4, 2.4, 0, 0, 0, 5.0]}, "eng_14": {"name": "Здания котельных", "linear": false, "objects": {"Котельная": {"П": [0.5, 1.0, 4.4, 13.6, 33.5, 2.9, 2.9, 10.2, 1.0, 10.0, 0, 0, 0, 6.0, 5.0, 2.0, 1.0, 1.0, 0, 5.0], "Р": [0.5, 1.0, 8.0, 18.0, 34.0, 2.9, 2.9, 10.4, 1.0, 11.3, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 5.0], "П+Р": [0.5, 1.0, 6.6, 16.2, 33.8, 2.9, 2.9, 10.3, 1.0, 10.8, 0, 0, 0, 5.4, 2.0, 0.8, 0.4, 0.4, 0, 5.0]}}, "_default": [0.5, 1.0, 6.6, 16.2, 33.8, 2.9, 2.9, 10.3, 1.0, 10.8, 0, 0, 0, 5.4, 2.0, 0.8, 0.4, 0.4, 0, 5.0]}, "eng_15": {"name": "Дизельные электростанции", "linear": false, "objects": {"Дизельная электростанция": {"П": [0.5, 1.0, 4.4, 13.6, 33.5, 2.9, 2.9, 10.2, 1.0, 10.0, 0, 0, 0, 6.0, 5.0, 2.0, 1.0, 1.0, 0, 5.0], "Р": [0.5, 1.0, 8.0, 18.0, 34.0, 2.9, 2.9, 10.4, 1.0, 11.3, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 5.0], "П+Р": [0.5, 1.0, 6.6, 16.2, 33.8, 2.9, 2.9, 10.3, 1.0, 10.8, 0, 0, 0, 5.4, 2.0, 0.8, 0.4, 0.4, 0, 5.0]}}, "_default": [0.5, 1.0, 6.6, 16.2, 33.8, 2.9, 2.9, 10.3, 1.0, 10.8, 0, 0, 0, 5.4, 2.0, 0.8, 0.4, 0.4, 0, 5.0]}, "eng_16": {"name": "Воздушные линии электропередачи", "linear": true, "sections": {"П": {"ПЗ": 0.5, "ППО": 2.0, "ТКР": 78.5, "ПОС": 6.0, "ООС": 6.0, "ПБ": 2.0, "СМ": 5.0}, "Р": {"ПЗ": 0.5, "ППО": 1.5, "ТКР": 88.0, "ПОС": 5.0, "ООС": 0, "ПБ": 0, "СМ": 5.0}, "П+Р": {"ПЗ": 0.5, "ППО": 1.7, "ТКР": 84.2, "ПОС": 5.4, "ООС": 2.4, "ПБ": 0.8, "СМ": 5.0}}}}};
+
+const CIVIL_SEC = ["ПЗ","ПЗУ","АР","КР","ТХ","ОВ","ВК","ЭО","СС","АВТ","КОН","ХС","ГС","ПОС","ООС","ПБ","ОДИ","ТБЭ","ЭЭ","СМ"];
+const CIVIL_NAMES = {ПЗ:"Пояснительная записка",ПЗУ:"Схема ПЗУ",АР:"Архитектурные решения",КР:"Конструктивные решения",ТХ:"Технологические решения",ОВ:"Отопление и вентиляция",ВК:"Водоснабжение и водоотведение",ЭО:"Электроснабжение",СС:"Сети связи",АВТ:"Автоматизация",КОН:"Кондиционирование",ХС:"Холодоснабжение",ГС:"Газоснабжение",ПОС:"Проект организации строительства",ООС:"Охрана окружающей среды",ПБ:"Пожарная безопасность",ОДИ:"Доступ инвалидов",ТБЭ:"Безопасная эксплуатация",ЭЭ:"Энергоэффективность",СМ:"Смета"};
+
+// Cost structure (Table 1.1, Appendix 2, 707/пр)
+const COST_STRUCTURE = [
+  {name:"Оплата труда производственного персонала",pct:40.06,cat:"direct"},
+  {name:"Отчисления на социальные нужды",pct:13.92,cat:"direct"},
+  {name:"Амортизационные отчисления",pct:1.38,cat:"direct"},
+  {name:"Материальные затраты",pct:1.39,cat:"direct"},
+  {name:"Прочие прямые затраты",pct:7.66,cat:"direct"},
+  {name:"Налоги (на имущество, на землю)",pct:3.80,cat:"taxes"},
+  {name:"Накладные – оплата труда АУП",pct:14.41,cat:"overhead"},
+  {name:"Накладные – содержание зданий, аренда",pct:8.04,cat:"overhead"},
+  {name:"Накладные – другие расходы",pct:9.34,cat:"overhead"}
+];
+
+// Qualification indices (Table 1.3, Appendix 2, 707/пр)
+const QUAL_INDICES = [
+  {name:"Начальник отдела/мастерской",idx:2.25},
+  {name:"Главный архитектор/инженер проекта (ГИП/ГАП)",idx:1.60},
+  {name:"Зам. начальника отдела",idx:1.80},
+  {name:"Главный специалист",idx:1.32},
+  {name:"Руководитель группы",idx:1.30},
+  {name:"Ведущий специалист (арх., инж., экон.)",idx:1.00},
+  {name:"Архитектор/инженер I категории",idx:0.90},
+  {name:"Архитектор/инженер II категории",idx:0.75},
+  {name:"Архитектор/инженер III категории",idx:0.65},
+  {name:"Архитектор/инженер (без категории)",idx:0.60},
+  {name:"Техник",idx:0.45}
+];
+
+// Design duration (264/пр, months for проектирование)
+const DURATION_NORMS = [
+  {maxArea:1500,months:5},
+  {maxArea:5000,months:11},
+  {maxArea:10000,months:11},
+  {maxArea:20000,months:12},
+  {maxArea:30000,months:12},
+  {maxArea:Infinity,months:15}
+];
+
+let currentGroup = 'civil';
+let currentSections = CIVIL_SEC;
+let currentSectionNames = CIVIL_NAMES;
+let lastMarketPrice = 0;
+let lastArea = 0;
+
+function switchGroup(group) {
+  currentGroup = group;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-group="${group}"]`).classList.add('active');
+  document.getElementById('calcSection').style.display = (group === 'cost') ? 'none' : '';
+  document.getElementById('costSection').style.display = (group === 'cost') ? '' : 'none';
+  if (group !== 'cost') populateCategories();
+  if (group === 'cost') updateCostTab();
+}
+
+function populateCategories() {
+  const sel = document.getElementById('category');
+  sel.innerHTML = '';
+  const group = UNIFIED.groups.find(g => g.id === currentGroup);
+  if (!group) return;
+  group.categories.forEach((cat, i) => {
+    const o = document.createElement('option'); o.value = i; o.textContent = cat.name; sel.appendChild(o);
+  });
+  sel.onchange = populateObjects;
+  populateObjects();
+}
+
+function populateObjects() {
+  const group = UNIFIED.groups.find(g => g.id === currentGroup);
+  if (!group) return;
+  const catIdx = parseInt(document.getElementById('category').value);
+  const cat = group.categories[isNaN(catIdx) ? 0 : catIdx];
+  const objSel = document.getElementById('object');
+  objSel.innerHTML = '';
+  cat.objects.forEach((obj, i) => {
+    const o = document.createElement('option'); o.value = i;
+    o.textContent = obj.name.length > 80 ? obj.name.substring(0,77)+'...' : obj.name;
+    objSel.appendChild(o);
+  });
+  objSel.onchange = onObjChange;
+  onObjChange();
+}
+
+function getSelection() {
+  const group = UNIFIED.groups.find(g => g.id === currentGroup);
+  if (!group) return null;
+  const catIdx = parseInt(document.getElementById('category').value);
+  const objIdx = parseInt(document.getElementById('object').value);
+  if (isNaN(catIdx) || isNaN(objIdx)) return null;
+  return { group, cat: group.categories[catIdx], obj: group.categories[catIdx].objects[objIdx] };
+}
+
+function onObjChange() {
+  const s = getSelection();
+  if (!s) return;
+  document.getElementById('unitLabel').textContent = s.obj.unit;
+  if (s.obj.intervals.length > 0) {
+    const iv = s.obj.intervals[0];
+    document.getElementById('Xvalue').value = Math.round((iv.min + iv.max) / 2);
+  }
+  setupSections(s);
+  calc();
+}
+
+function setupSections(s) {
+  const st = SECTIONS_DATA.tables[s.obj.section_table];
+  const isLinear = st && st.linear && s.group.type === 'engineering';
+  if (isLinear) {
+    currentSections = ["ПЗ","ППО","ТКР","ПОС","ООС","ПБ","СМ"];
+    currentSectionNames = {ПЗ:"Пояснительная записка",ППО:"Проект полосы отвода",ТКР:"Тех. и констр. решения",ПОС:"Проект организации стр-ва",ООС:"Охрана окруж. среды",ПБ:"Пожарная безопасность",СМ:"Смета"};
+  } else {
+    currentSections = CIVIL_SEC; currentSectionNames = CIVIL_NAMES;
+  }
+  document.getElementById('sectionTitle').textContent = isLinear ? '4. Разделы ПД (линейный объект)' : '4. Разделы проектной документации';
+  const container = document.getElementById('sectionList');
+  container.innerHTML = '';
+  currentSections.forEach((key, i) => {
+    const div = document.createElement('div'); div.className = 'sx-item';
+    div.innerHTML = `<input type="checkbox" class="sx" checked data-idx="${i}" id="s_${key}"><label for="s_${key}"><b>${key}</b></label>`;
+    container.appendChild(div);
+  });
+  document.querySelectorAll('.sx').forEach(cb => cb.onchange = calc);
+  document.getElementById('checkAll').checked = true;
+}
+
+function findInterval(obj, X) {
+  for (const iv of obj.intervals) if (X >= iv.min && X <= iv.max) return iv;
+  const first = obj.intervals[0];
+  if (obj.intervals.length === 1 && first.min === first.max && first.b === 0) return first;
+  if (X < first.min && X >= first.min / 2) return {...first, _ext:'below_half',_Xmin:first.min};
+  if (X < first.min / 2 && X > 0) return {...first, _ext:'below',_Xmin:first.min,_Xhalf:first.min/2};
+  if (X < first.min) return first;
+  const last = obj.intervals[obj.intervals.length-1];
+  return {...last, _ext:'above',_Xmax:last.max};
+}
+
+function calcBase(a, b, X, iv) {
+  if (iv._ext === 'below_half') return a + b * (0.4*iv._Xmin + 0.6*X);
+  if (iv._ext === 'below') { const h = iv._Xhalf; return (a + b * (0.4*iv._Xmin + 0.6*h)) * Math.max(0.1, X/h); }
+  if (iv._ext === 'above') return a + b * (0.4*iv._Xmax + 0.6*X);
+  return a + b * X;
+}
+
+function getK() {
+  const m = [['c_d1',0.10],['c_d2',0.20],['c_d3',0.40],['c_s1',0.15],['c_s2',0.20],['c_s3',0.30],['c_soil',0.15],['c_frost',0.15],['c_flood',0.15],['c_uniq',0.50],['c_recon',0.50],['c_overh',-0.50],['c_import',0.30],['c_cramp',0.10],['c_parallel',0.30]];
+  let sum = 0; m.forEach(([id, v]) => { if (document.getElementById(id).checked) sum += v; });
+  return 1 + sum;
+}
+
+function calc() {
+  const s = getSelection();
+  if (!s) { document.getElementById('tp').textContent='—'; document.getElementById('bp').textContent='—'; return; }
+  const X = parseFloat(document.getElementById('Xvalue').value) || 0;
+  const Ipr = parseFloat(document.getElementById('Ipr').value) || 1.0;
+  const stage = document.getElementById('stage').value;
+  lastArea = X;
+  const iv = findInterval(s.obj, X);
+  const a = iv.a, b = iv.b;
+  const C_base = calcBase(a, b, X, iv);
+  const K = getK();
+  const stagePct = stage === 'П' ? 0.4 : stage === 'Р' ? 0.6 : 1.0;
+  const C_stage = C_base * stagePct * K * Ipr;
+  const nds = document.getElementById('c_nds').checked ? 1.2 : 1.0;
+  const total = C_stage * nds;
+  lastMarketPrice = C_stage; // без НДС
+  document.getElementById('bp').textContent = (C_base * Ipr).toFixed(1);
+  document.getElementById('tp').textContent = total.toFixed(1);
+  document.getElementById('fd').textContent = `C = (${a} + ${b} × ${X}) × ${K.toFixed(3)} × ${Ipr} × ${(stagePct*100).toFixed(0)}% = ${C_stage.toFixed(1)}`;
+  document.getElementById('intervalInfo').textContent = iv._ext ? `⚠ Экстраполяция (${iv._ext})` : `Интервал: ${iv.min} – ${iv.max} ${s.obj.unit}`;
+  // Sections
+  const st = SECTIONS_DATA.tables[s.obj.section_table];
+  if (!st) { document.getElementById('detailCard').style.display='none'; return; }
+  let sd;
+  if (st.linear) {
+    sd = st.sections[stage] || st.sections['П+Р'];
+  } else {
+    if (st.objects) {
+      let found = null;
+      for (const [k, v] of Object.entries(st.objects)) { if (s.obj.name.includes(k) || k.includes(s.obj.name.substring(0,8))) { found = v; break; } }
+      const obj = found || st.objects[Object.keys(st.objects)[0]];
+      if (obj) sd = obj[stage] || obj['П+Р'] || Object.values(obj)[0];
+    }
+    if (!sd && st._default) sd = st._default;
+  }
+  if (!sd) { document.getElementById('detailCard').style.display='none'; return; }
+  if (Array.isArray(sd)) sd = Object.fromEntries(currentSections.map((k,i)=>[k,sd[i]||0]));
+  let html = '';
+  currentSections.forEach((key, i) => {
+    const checked = document.getElementById(`s_${key}`).checked;
+    const pct = sd[key] || 0;
+    const cost = checked ? C_stage * pct / 100 : 0;
+    if (pct > 0) html += `<div class="detail-item" style="opacity:${checked?1:.4}"><div class="detail-item-name"><b>${key}</b> ${currentSectionNames[key]||''}</div><div class="detail-item-right"><span class="detail-item-pct">${pct}%</span><span class="detail-item-cost">${cost.toFixed(1)}</span></div></div>`;
+  });
+  document.getElementById('detailValues').innerHTML = html;
+  document.getElementById('detailCard').style.display = '';
+  updateCostTab();
+}
+
+// ===== COST PRICE =====
+let costMode = 'market';
+
+function setCostMode(m) {
+  costMode = m;
+  document.querySelectorAll('.cost-mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.cost-mode-btn:${m==='market'?'first-child':'last-child'}`).classList.add('active');
+  document.getElementById('costMarket').style.display = m === 'market' ? '' : 'none';
+  document.getElementById('costCalc').style.display = m === 'calc' ? '' : 'none';
+  updateCostTab();
+}
+
+function updateCostTab() {
+  if (currentGroup !== 'cost') return;
+  if (costMode === 'market') calcCostMarket();
+  else calcCostCalc();
+}
+
+function calcCostMarket() {
+  document.getElementById('cost_market_price').value = lastMarketPrice.toFixed(1);
+  const R = parseFloat(document.getElementById('cost_rentability').value) / 100 || 0.1;
+  const C = lastMarketPrice;
+  const Ss = C / (1 + R);
+  const P = C - Ss;
+  let html = `<tr><th>Статья затрат</th><th>%</th><th class="right">тыс. руб.</th></tr>`;
+  let sumCheck = 0;
+  COST_STRUCTURE.forEach(item => {
+    const cost = Ss * item.pct / 100;
+    sumCheck += cost;
+    html += `<tr><td>${item.name}</td><td>${item.pct}%</td><td class="right">${cost.toFixed(1)}</td></tr>`;
+  });
+  html += `<tr class="total-row"><td><b>Себестоимость</b></td><td>100%</td><td class="right"><b>${Ss.toFixed(1)}</b></td></tr>`;
+  html += `<tr class="total-row highlight"><td><b>Прибыль</b></td><td>${(R*100).toFixed(0)}%</td><td class="right"><b>${P.toFixed(1)}</b></td></tr>`;
+  html += `<tr class="total-row"><td><b>Рыночная цена</b></td><td></td><td class="right"><b>${C.toFixed(1)}</b></td></tr>`;
+  document.getElementById('costMarketTable').innerHTML = html;
+  document.getElementById('costMarket').style.display = '';
+}
+
+function autoTp(area) {
+  for (const d of DURATION_NORMS) {
+    if (area <= d.maxArea) return d.months;
+  }
+  return 15;
+}
+
+function calcCostCalc() {
+  const ZP = parseFloat(document.getElementById('cost_zp').value) || 120000;
+  const daysMonth = parseFloat(document.getElementById('cost_days_month').value) || 21;
+  const Tp = parseFloat(document.getElementById('cost_tp').value) || 231;
+  const Ch = parseFloat(document.getElementById('cost_ch').value) || 5;
+  const R = parseFloat(document.getElementById('cost_rent2').value) / 100 || 0.1;
+  
+  // Auto Tp suggestion
+  const areaMonths = autoTp(lastArea);
+  document.getElementById('cost_tp_auto').textContent = `Авто по 264/пр для ${lastArea.toFixed(0)} м²: ${areaMonths} мес = ~${areaMonths * 21} раб. дней`;
+  
+  // Calculate Ккв-уч from team composition
+  let kcvSum = 0;
+  let totalPeople = 0;
+  document.querySelectorAll('.team-qty').forEach(sel => {
+    const qty = parseInt(sel.value) || 0;
+    const idx = parseFloat(sel.dataset.idx);
+    kcvSum += qty * idx;
+    totalPeople += qty;
+  });
+  const Kcv = totalPeople > 0 ? Math.min(1.0, kcvSum / totalPeople) : 1.0;
+  document.getElementById('cost_kcv_info').textContent = `Ккв-уч = Σ(Чi × Иi) / Чобщ = ${kcvSum.toFixed(1)} / ${totalPeople} = ${(kcvSum/totalPeople).toFixed(3)} → ограничен 1.0 → ${Kcv.toFixed(3)}`;
+  
+  const ZP_day = ZP / daysMonth;
+  const Vsr = ZP_day * (1 + R) / 0.4;
+  const Ss = Vsr * Tp * Ch * Kcv;
+  const C = Ss * (1 + R);
+  const P = C - Ss;
+  
+  let html = `<tr><th>Параметр</th><th>Значение</th><th class="right">Расчёт</th></tr>`;
+  html += `<tr><td>ЗПср (день)</td><td>${(ZP_day/1000).toFixed(3)} тыс. руб.</td><td class="right">${ZP} / ${daysMonth}</td></tr>`;
+  html += `<tr><td>Вср (выработка)</td><td>${Vsr.toFixed(3)} тыс. руб/день</td><td class="right">${ZP_day.toFixed(3)} × ${(1+R).toFixed(2)} / 0.4</td></tr>`;
+  html += `<tr><td>Ккв-уч</td><td>${Kcv.toFixed(3)}</td><td class="right">по составу команды</td></tr>`;
+  html += `<tr class="total-row"><td><b>Себестоимость</b></td><td colspan="2" class="right"><b>${Ss.toFixed(1)} тыс. руб.</b></td></tr>`;
+  html += `<tr><td colspan="3">Сс = Вср × Тп × Чобщ × Ккв-уч = ${Vsr.toFixed(3)} × ${Tp} × ${Ch} × ${Kcv.toFixed(3)}</td></tr>`;
+  html += `<tr class="total-row highlight"><td><b>Прибыль (${(R*100).toFixed(0)}%)</b></td><td colspan="2" class="right"><b>${P.toFixed(1)} тыс. руб.</b></td></tr>`;
+  html += `<tr class="total-row"><td><b>Рыночная цена</b></td><td colspan="2" class="right"><b>${C.toFixed(1)} тыс. руб.</b></td></tr>`;
+  
+  // Compare with lastMarketPrice
+  if (lastMarketPrice > 0) {
+    const diff = ((C - lastMarketPrice) / lastMarketPrice * 100).toFixed(0);
+    html += `<tr><td colspan="3" class="info" style="padding-top:6px">`;
+    html += diff > 0 ? `⚠ Калькуляция выше рыночной цены на ${diff}% — проверьте Тп и Чобщ` : `✓ Калькуляция ниже рыночной цены на ${Math.abs(diff)}%`;
+    html += `</td></tr>`;
+  }
+  
+  document.getElementById('costCalcTable').innerHTML = html;
+}
+
+function buildTeamTable() {
+  let html = `<tr><th>Должность</th><th>Индекс Иi</th><th>Численность Чi</th></tr>`;
+  QUAL_INDICES.forEach((q, i) => {
+    html += `<tr><td>${q.name}</td><td>${q.idx.toFixed(2)}</td><td><select class="team-qty" data-idx="${q.idx}" onchange="if(currentGroup==='cost')calcCostCalc()">`;
+    for (let n = 0; n <= 10; n++) html += `<option value="${n}" ${(i===5&&n===2)||(i===7&&n===2)||(i===4&&n===1)?'selected':''}>${n}</option>`;
+    html += `</select></td></tr>`;
+  });
+  document.getElementById('teamTable').innerHTML = html;
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  populateCategories();
+  buildTeamTable();
+  document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.onchange = function() {
+    if (currentGroup !== 'cost') calc();
+    else updateCostTab();
+  });
+  ['Xvalue','stage','Ipr'].forEach(id => document.getElementById(id).oninput = () => { if (currentGroup !== 'cost') calc(); });
+});
+</script></body></html>
