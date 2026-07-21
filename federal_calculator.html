@@ -220,15 +220,17 @@ let lastArea = 0;
 let currentSections = CIVIL_SEC;
 let currentSectionNames = CIVIL_NAMES;
 let lastMarketPrice = 0;
-let savedCatIdx = null;
-let savedObjIdx = null;
 let currentGroup = 'civil';
+let savedState = {};
 
 function switchGroup(group) {
-  // Save state before switching away
-  if (currentGroup !== 'cost' && group === 'cost') {
-    const c = document.getElementById('category'); if (c) savedCatIdx = c.value;
-    const o = document.getElementById('object'); if (o) savedObjIdx = o.value;
+  // Save current calc state before switching away
+  if (currentGroup !== 'cost' && currentGroup !== '') {
+    savedState[currentGroup] = {
+      catIdx: document.getElementById('category').value,
+      objIdx: document.getElementById('object').value,
+      Xvalue: document.getElementById('Xvalue').value
+    };
   }
   currentGroup = group;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -237,12 +239,14 @@ function switchGroup(group) {
   document.getElementById('costSection').style.display = (group === 'cost') ? '' : 'none';
   if (group !== 'cost') {
     populateCategories();
-    // Restore previous selection
-    if (savedCatIdx !== null) {
-      document.getElementById('category').value = savedCatIdx;
+    const saved = savedState[group];
+    if (saved) {
+      document.getElementById('category').value = saved.catIdx;
       populateObjects();
-      document.getElementById('object').value = savedObjIdx;
+      document.getElementById('object').value = saved.objIdx;
       onObjChange();
+      document.getElementById('Xvalue').value = saved.Xvalue;
+      calc();
     }
   }
   if (group === 'cost') updateCostTab();
