@@ -127,7 +127,7 @@ select:focus,input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3
   <div class="result-grid">
     <div><div class="result-label">Базовая цена Ц(б), тыс. руб.</div><div class="result-value" id="bp">—</div></div>
     <div><div class="result-label">Итого, тыс. руб.</div><div class="result-value" id="tp">—</div>
-      <div class="check-item" style="margin-top:4px;font-size:11px"><input type="checkbox" id="c_nds"><span>+ НДС 20%</span></div></div>
+      <div class="check-item" style="margin-top:4px;font-size:11px"><input type="checkbox" id="c_nds"><span>+ НДС 22%</span></div></div>
   </div>
   <div class="formula-box" style="margin-top:8px;background:rgba(255,255,255,.1);border:none;color:#fff" id="fd">C = (a + b × X) × Кп × Ипр</div>
 </div>
@@ -355,7 +355,7 @@ function calc() {
   const K = getK();
   const stagePct = stage === 'П' ? 0.4 : stage === 'Р' ? 0.6 : 1.0;
   const C_stage = C_base * stagePct * K * Ipr;
-  const nds = document.getElementById('c_nds').checked ? 1.2 : 1.0;
+  const nds = document.getElementById('c_nds').checked ? 1.22 : 1.0;
   const total = C_stage * nds;
   lastMarketPrice = C_stage; // без НДС
   document.getElementById('bp').textContent = (C_base * Ipr).toFixed(1);
