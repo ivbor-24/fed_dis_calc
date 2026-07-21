@@ -443,12 +443,10 @@ function calcReverse() {
   const fotSocialPct = 40.06 + 13.92;
   const fotSocialBudget = Ss * fotSocialPct / 100;
   
-  // Дневная ставка с соцотчислениями
-  const ZPday = ZP / daysMonth;
-  const ZPdaySocial = ZPday * (1 + 13.92/40.06); // соцотчисления пропорционально ФОТ
-  // Упрощённо: соцотчисления ≈ 34.76% от зарплаты (=13.92/40.06)
-  const socRate = 13.92 / 40.06; // ≈ 0.3475
-  const dayRate = ZPday * (1 + socRate);
+  // Дневная ставка с соцотчислениями, тыс. руб./день
+  const ZPday = ZP / daysMonth / 1000; // ЗПср в тыс. руб./день
+  const socRate = 13.92 / 40.06; // соцотчисления ≈ 34.76% от зарплаты (=13.92/40.06)
+  const dayRate = ZPday * (1 + socRate); // тыс. руб./день
   
   // Доступные человеко-дни
   const availableMD = fotSocialBudget / dayRate;
