@@ -853,11 +853,22 @@ for head, body in devs:
     x += 4.05
 notes(sl, "Мы не просто продаём лицензии: помогаем получить экономию из расчёта на практике.")
 
+def fix_img_layers(slide):
+    """В шаблоне эффект яркости картинки (a14:imgLayer) ссылается на связь со слайдом, а не на hdphoto."""
+    for layer in list(slide._element.iter("{http://schemas.microsoft.com/office/drawing/2010/main}imgLayer")):
+        rId = layer.get(qn("r:embed"))
+        rel = slide.part.rels.get(rId) if rId else None
+        if rel is None or not rel.reltype.endswith("/hdphoto"):
+            ext = layer.getparent().getparent()          # a:ext
+            ext.getparent().remove(ext)
+
+
 # ---------------------------------------------------------------- навигация и чистка
 for n, sl in enumerate(S, 1):
     if n > 1:
         rebuild_nav(n, sl)
 for sl in S:
+    fix_img_layers(sl)
     drop_dead_slide_rels(sl)
 
 prs.save(OUT)
