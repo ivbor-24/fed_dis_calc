@@ -28,9 +28,9 @@ MUTED = RGBColor(0x6B, 0x72, 0x80)
 PALE = RGBColor(0xE3, 0xEF, 0xFE)
 LINE = RGBColor(0xC9, 0xD3, 0xE0)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
-F_HEAD = "VK Sans Display DemiBold"
-F_BODY = "Manrope Medium"
-F_NAV = "Roboto Light"
+F_HEAD = "+mj-lt"   # тема: Manrope, заголовки всегда Bold
+F_BODY = "+mn-lt"   # тема: Manrope Medium
+F_NAV = "Manrope"
 
 prs = Presentation(SRC)
 S = list(prs.slides)
@@ -50,7 +50,7 @@ def style_run(run, size, color=INK, font=F_BODY, bold=False):
     f = run.font
     f.size = Pt(size)
     f.name = font
-    f.bold = bold
+    f.bold = bold or font == F_HEAD
     f.color.rgb = color
 
 

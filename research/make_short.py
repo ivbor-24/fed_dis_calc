@@ -74,7 +74,7 @@ for n, sl in enumerate(S, 1):
         r = p.add_run()
         r.text = label
         r.font.size = Pt(12)
-        r.font.name = "Roboto Light"
+        r.font.name = "Manrope"
         r.font.color.rgb = BLUE if active else WHITE
         s.click_action.target_slide = S[target - 1]
         x += w + 0.15
